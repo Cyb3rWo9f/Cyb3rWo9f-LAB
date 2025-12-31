@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyb3rWo9f's Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Highlight.js Theme (Atom One Dark style) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <!-- KaTeX for math equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        background-color: #000;
+        color: #fff;
+        font-family: 'Space Grotesk', sans-serif;
+        overflow-x: hidden;
+      }
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #000;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #10b981;
+        border-radius: 10px;
+      }
+      @keyframes pulse-green {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      .animate-pulse-green {
+        animation: pulse-green 2s infinite;
+      }
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+      .animate-blink {
+        animation: blink 1s step-end infinite;
+      }
+      ::selection {
+        background: #10b981;
+        color: #000;
+      }
+
+      /* Markdown Industrial Styling */
+      .prose-industrial {
+        color: #d4d4d8;
+        line-height: 1.8;
+      }
+      .prose-industrial h1, .prose-industrial h2, .prose-industrial h3 {
+        color: #fff;
+        font-weight: 800;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        letter-spacing: -0.025em;
+      }
+      .prose-industrial h2 { border-bottom: 1px solid #18181b; padding-bottom: 0.5rem; }
+      .prose-industrial code { 
+        font-family: 'JetBrains Mono', monospace; 
+        background: rgba(16, 185, 129, 0.1); 
+        color: #34d399; 
+        padding: 0.2rem 0.4rem; 
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      .prose-industrial pre {
+        background: #09090b !important;
+        border: 1px solid #18181b;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        overflow-x: auto;
+      }
+      .prose-industrial pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+        font-size: 0.85em;
+      }
+      .prose-industrial blockquote {
+        border-left: 4px solid #10b981;
+        background: rgba(16, 185, 129, 0.03);
+        padding: 1rem 1.5rem;
+        margin: 1.5rem 0;
+        font-style: normal; /* No italic as requested */
+        color: #a1a1aa;
+      }
+      .prose-industrial a {
+        color: #10b981;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
+      }
+      .prose-industrial a:hover { color: #34d399; }
+      .prose-industrial ul { list-style-type: square; padding-left: 1.5rem; margin: 1rem 0; }
+      .prose-industrial li { margin-bottom: 0.5rem; }
+      .katex-display {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "marked": "https://esm.sh/marked@12.0.0",
+    "highlight.js": "https://esm.sh/highlight.js@11.9.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
