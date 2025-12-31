@@ -252,23 +252,26 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
       {/* Contact Modal */}
       {showContactModal && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
           onClick={() => setShowContactModal(false)}
         >
           <div 
-            className="bg-zinc-950 border border-emerald-500/30 rounded-lg p-8 max-w-2xl w-full shadow-2xl shadow-emerald-500/10 animate-in zoom-in-95 duration-300"
+            className="bg-zinc-950 border border-zinc-800 rounded-lg p-6 md:p-8 max-w-lg w-full animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-500 tracking-tight">
-                SECURE TRANSMISSION
-              </h2>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                  Send Message
+                </h2>
+                <p className="text-zinc-500 text-xs mono mt-1">// secure_transmission</p>
+              </div>
               <button
                 onClick={() => setShowContactModal(false)}
-                className="text-zinc-500 hover:text-emerald-400 transition-colors p-1"
+                className="text-zinc-600 hover:text-zinc-400 transition-colors p-1 hover:bg-zinc-800 rounded"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
@@ -281,53 +284,53 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                   setSending(false);
                   setShowContactModal(false);
                   setContactForm({ identifier: '', subject: '', payload: '' });
-                  alert('Message transmission successful! I will respond soon.');
+                  alert('Message sent successfully!');
                 }, 1500);
               }}
-              className="space-y-6"
+              className="space-y-5"
             >
               {/* Identifier */}
               <div className="space-y-2">
-                <label className="text-xs text-emerald-400 mono uppercase tracking-widest font-bold">
-                  // IDENTIFIER
+                <label className="text-[11px] text-zinc-500 mono uppercase tracking-wider">
+                  Name
                 </label>
                 <input
                   type="text"
                   required
                   value={contactForm.identifier}
                   onChange={(e) => setContactForm({ ...contactForm, identifier: e.target.value })}
-                  placeholder="Ghost in the Shell"
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-4 py-3 text-zinc-300 placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all mono text-sm"
+                  placeholder="Your name"
+                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-3 text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors text-sm"
                 />
               </div>
 
               {/* Subject */}
               <div className="space-y-2">
-                <label className="text-xs text-emerald-400 mono uppercase tracking-widest font-bold">
-                  // SUBJECT_LINE
+                <label className="text-[11px] text-zinc-500 mono uppercase tracking-wider">
+                  Subject
                 </label>
                 <input
                   type="text"
                   required
                   value={contactForm.subject}
                   onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                  placeholder="Connection Request"
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-4 py-3 text-zinc-300 placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all mono text-sm"
+                  placeholder="What's this about?"
+                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-3 text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors text-sm"
                 />
               </div>
 
               {/* Payload */}
               <div className="space-y-2">
-                <label className="text-xs text-emerald-400 mono uppercase tracking-widest font-bold">
-                  // PAYLOAD
+                <label className="text-[11px] text-zinc-500 mono uppercase tracking-wider">
+                  Message
                 </label>
                 <textarea
                   required
                   value={contactForm.payload}
                   onChange={(e) => setContactForm({ ...contactForm, payload: e.target.value })}
-                  placeholder="Enter your message here..."
-                  rows={6}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-4 py-3 text-zinc-300 placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-all mono text-sm resize-none"
+                  placeholder="Write your message..."
+                  rows={5}
+                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-3 text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors text-sm resize-none"
                 />
               </div>
 
@@ -335,11 +338,15 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-black font-bold py-4 rounded transition-all duration-300 mono text-sm uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-md transition-colors duration-200 text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
-                {sending ? 'TRANSMITTING...' : 'SEND TRANSMISSION'}
+                {sending ? 'Sending...' : 'Send Message'}
               </button>
             </form>
+
+            <p className="text-[10px] text-zinc-600 mono text-center mt-6">
+              Messages are end-to-end encrypted
+            </p>
           </div>
         </div>
       )}
