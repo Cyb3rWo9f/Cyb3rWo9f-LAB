@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Github, Mail, Code2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Github, Mail, Code2, RefreshCw, Twitter } from 'lucide-react';
 import { fetchLanguageStats, fetchGitHubStats, getLastSyncTime, formatBytes, LanguageSkill, GitHubStats } from '../services/github';
 
 interface ToolsViewProps {
@@ -100,11 +100,22 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
           {/* Contact Links */}
           <div className="space-y-3">
             <a
-              href="#"
+              href="https://github.com/Cyb3rWo9f"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 border border-emerald-500/20 rounded-lg bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
             >
               <Github size={16} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
-              <span className="mono text-xs uppercase tracking-widest">github.com</span>
+              <span className="mono text-xs uppercase tracking-widest">github.com/Cyb3rWo9f</span>
+            </a>
+            <a
+              href="https://x.com/Cyb3rWo9f"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 border border-emerald-500/20 rounded-lg bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
+            >
+              <Twitter size={16} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
+              <span className="mono text-xs uppercase tracking-widest">x.com/Cyb3rWo9f</span>
             </a>
             <a
               href="#"
