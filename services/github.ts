@@ -49,6 +49,7 @@ const FEATURED_LANGUAGES = [
   'Bash',
   'SQL',
   'C++',
+  'PowerShell',
 ];
 
 export interface LanguageSkill {
