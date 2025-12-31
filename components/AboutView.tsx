@@ -178,7 +178,6 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                     <div className="h-2.5 bg-zinc-800 rounded-full" />
                   </div>
                 ))}
-                <p className="text-zinc-600 text-sm mono mt-4">Fetching data from GitHub...</p>
               </div>
             ) : skills.length === 0 ? (
               <div className="text-zinc-500 text-sm">No language data available. Make sure repositories are public.</div>

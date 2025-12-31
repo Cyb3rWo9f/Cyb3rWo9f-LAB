@@ -836,7 +836,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
             <div className="flex items-center gap-2">
               <div className="w-1 h-4 bg-emerald-300" />
               <div className="flex flex-col leading-tight">
-                <span className="text-[8px] mono text-zinc-500 uppercase tracking-[0.3em]">Total Writeups</span>
+                <span className="text-[8px] mono text-zinc-500 uppercase tracking-[0.3em]">Writeups</span>
                 <span className="text-[11px] mono text-white font-black">{writeups.length.toString().padStart(2, '0')}</span>
               </div>
             </div>
