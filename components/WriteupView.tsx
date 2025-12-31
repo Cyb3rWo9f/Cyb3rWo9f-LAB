@@ -17,6 +17,14 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
   const [selectedWriteup, setSelectedWriteup] = useState<Writeup | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStats, setLoadingStats] = useState({
+    writeups: 0,
+    platforms: 0,
+    tags: 0,
+    minutes: 0
+  });
+  const [loadingPhase, setLoadingPhase] = useState<'connecting' | 'scanning' | 'decrypting' | 'loading' | 'complete'>('connecting');
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
   const [platformFilter, setPlatformFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [imageMeta, setImageMeta] = useState<{ src: string; alt: string; name: string; width?: number; height?: number; status: 'loading' | 'ok' | 'error' }[]>([]);
@@ -156,27 +164,114 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
       try {
         setLoading(true);
         setLoadingProgress(0);
-        
-        // Simulate progress over 5 seconds
-        const progressInterval = setInterval(() => {
-          setLoadingProgress(prev => {
-            if (prev >= 95) {
-              clearInterval(progressInterval);
-              return prev;
-            }
-            return prev + Math.random() * 25;
-          });
-        }, 300);
+        setLoadingStats({ writeups: 0, platforms: 0, tags: 0, minutes: 0 });
+        setTerminalLines([]);
+        setLoadingPhase('connecting');
 
+        // Terminal output simulation
+        const addTerminalLine = (line: string) => {
+          setTerminalLines(prev => [...prev.slice(-8), line]);
+        };
+
+        // Phase 1: Connecting
+        addTerminalLine('$ vault --connect --secure');
+        await new Promise(r => setTimeout(r, 400));
+        addTerminalLine('> Establishing secure connection...');
+        setLoadingProgress(10);
+
+        await new Promise(r => setTimeout(r, 600));
+        addTerminalLine('> Connection established [TLS 1.3]');
+        setLoadingProgress(20);
+        setLoadingPhase('scanning');
+
+        // Phase 2: Scanning
+        await new Promise(r => setTimeout(r, 400));
+        addTerminalLine('$ scan --bucket writeups --recursive');
+        setLoadingProgress(30);
+
+        await new Promise(r => setTimeout(r, 500));
+        addTerminalLine('> Scanning storage bucket...');
+        setLoadingProgress(40);
+
+        // Actually load the data
         const data = await loadAllWriteups();
+        const validData = data || [];
+
+        // Calculate target stats
+        const parseMinutes = (rt?: string): number => {
+          if (!rt) return 0;
+          const m = rt.match(/(\d+)\s*MIN/i);
+          return m ? parseInt(m[1], 10) : 0;
+        };
+
+        const allTags = new Set<string>();
+        const allPlatforms = new Set<string>();
+        let totalMinutes = 0;
+
+        validData.forEach(w => {
+          if (w.platform) allPlatforms.add(w.platform.toUpperCase());
+          (w.tags || []).forEach(t => allTags.add(t.toLowerCase()));
+          totalMinutes += parseMinutes(w.readingTime);
+        });
+
+        const targetStats = {
+          writeups: validData.length,
+          platforms: allPlatforms.size,
+          tags: allTags.size,
+          minutes: totalMinutes
+        };
+
+        addTerminalLine(`> Found ${validData.length} writeup files`);
+        setLoadingProgress(50);
+        setLoadingPhase('decrypting');
+
+        // Phase 3: Decrypting
+        await new Promise(r => setTimeout(r, 400));
+        addTerminalLine('$ decrypt --all --verify-checksum');
+        setLoadingProgress(60);
+
+        await new Promise(r => setTimeout(r, 500));
+        addTerminalLine('> Decrypting writeup modules...');
+        setLoadingProgress(70);
+
+        // Animate stats counting up
+        const steps = 20;
+        const stepDelay = 60;
         
-        // Complete remaining progress
+        for (let i = 1; i <= steps; i++) {
+          await new Promise(r => setTimeout(r, stepDelay));
+          const progress = i / steps;
+          setLoadingStats({
+            writeups: Math.round(targetStats.writeups * progress),
+            platforms: Math.round(targetStats.platforms * progress),
+            tags: Math.round(targetStats.tags * progress),
+            minutes: Math.round(targetStats.minutes * progress)
+          });
+          setLoadingProgress(70 + (progress * 20));
+        }
+
+        setLoadingPhase('loading');
+        addTerminalLine('> Verification complete');
+        setLoadingProgress(92);
+
+        // Phase 4: Loading
+        await new Promise(r => setTimeout(r, 400));
+        addTerminalLine('$ mount --filesystem /writeups');
+        setLoadingProgress(95);
+
+        await new Promise(r => setTimeout(r, 500));
+        addTerminalLine('> Mounting encrypted filesystem...');
+        setLoadingProgress(98);
+
+        await new Promise(r => setTimeout(r, 400));
+        addTerminalLine('> System ready');
         setLoadingProgress(100);
+        setLoadingPhase('complete');
+
+        // Brief pause to show completion
+        await new Promise(r => setTimeout(r, 800));
         
-        // Minimum 5 second loading time
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        setWriteups(data || []);
+        setWriteups(validData);
       } catch (error) {
         console.error("Failed to load writeups", error);
         setWriteups([]);
@@ -368,96 +463,153 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
 
   if (loading) {
     const progressPercent = Math.min(Math.round(loadingProgress), 100);
-    const statusIndex = Math.floor((progressPercent / 100) * 3);
-    const isConnecting = progressPercent < 40;
-    const isDecrypting = progressPercent >= 40 && progressPercent < 70;
-    const isLoading = progressPercent >= 70;
 
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center overflow-hidden">
-        {/* Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-16 text-center px-6 max-w-2xl mx-auto">
-          {/* Title with subtle glow */}
-          <div className="space-y-4">
-            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400 tracking-tighter drop-shadow-lg">
-              ACCESSING ARCHIVE
-            </h1>
-            <div className="h-1 w-32 bg-gradient-to-r from-transparent via-emerald-500 to-transparent mx-auto rounded-full" />
-          </div>
-
-          {/* Status section */}
-          <div className="space-y-4 w-full">
-            <div className="text-xs mono text-emerald-500/60 tracking-widest uppercase mb-4">INITIALIZATION STATUS</div>
-            
+      <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-700">
+        <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-8">
+          {/* Main Loading Display */}
+          <div className="text-center space-y-6 w-full max-w-2xl">
+            {/* Title */}
             <div className="space-y-3">
-              <div className={`flex items-center justify-center gap-4 transition-all duration-300 ${isConnecting ? 'opacity-100' : 'opacity-50'}`}>
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-200" />
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-400" />
-                </div>
-                <span className="text-sm mono text-emerald-300 transition-colors">{isConnecting ? 'Connecting to vault' : 'Connected'}</span>
+              <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400 tracking-tighter">
+                ACCESSING ARCHIVE
+              </h1>
+              <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-emerald-500 to-transparent mx-auto" />
+            </div>
+
+            {/* Status Text */}
+            <div>
+              <div className="mono text-emerald-500 text-sm animate-pulse font-bold tracking-widest mb-2">
+                {loadingPhase === 'connecting' && 'ESTABLISHING CONNECTION'}
+                {loadingPhase === 'scanning' && 'SCANNING STORAGE BUCKET'}
+                {loadingPhase === 'decrypting' && 'DECRYPTING WRITEUP MODULES'}
+                {loadingPhase === 'loading' && 'MOUNTING FILESYSTEM'}
+                {loadingPhase === 'complete' && 'SYSTEM READY'}
               </div>
-              
-              <div className={`flex items-center justify-center gap-4 transition-all duration-300 ${isDecrypting ? 'opacity-100' : 'opacity-50'}`}>
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-200" />
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-400" />
-                </div>
-                <span className="text-sm mono text-emerald-400 transition-colors">{isDecrypting ? 'Decrypting modules' : 'Decrypted'}</span>
-              </div>
-              
-              <div className={`flex items-center justify-center gap-4 transition-all duration-300 ${isLoading ? 'opacity-100' : 'opacity-50'}`}>
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-200" />
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-400" />
-                </div>
-                <span className="text-sm mono text-emerald-400 transition-colors">{isLoading ? 'Loading writeups' : 'Complete'}</span>
+              <div className="text-zinc-600 mono text-xs">
+                {loadingPhase === 'connecting' && 'Initializing secure vault connection...'}
+                {loadingPhase === 'scanning' && 'Scanning for writeup files in storage...'}
+                {loadingPhase === 'decrypting' && 'Decrypting and verifying writeup integrity...'}
+                {loadingPhase === 'loading' && 'Preparing encrypted filesystem...'}
+                {loadingPhase === 'complete' && 'All writeups loaded successfully.'}
               </div>
             </div>
-          </div>
 
-          {/* Progress section */}
-          <div className="w-full max-w-xs space-y-3">
+            {/* Progress Bar */}
             <div className="space-y-2">
-              <div className="flex justify-between text-xs mono text-emerald-500/60 tracking-wide">
-                <span>SYNC PROGRESS</span>
-                <span className="text-emerald-400 font-bold">{progressPercent}%</span>
-              </div>
-              <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden border border-emerald-500/20">
+              <div className="w-full bg-zinc-900 border border-zinc-800 rounded h-1.5 overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 rounded-full shadow-lg shadow-emerald-500/30 transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 transition-all duration-300 shadow-lg shadow-emerald-500/30"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
+              <div className="flex justify-between items-center">
+                <div className="mono text-[10px] text-zinc-600">
+                  {progressPercent}% complete
+                </div>
+                <div className="mono text-[10px] text-zinc-600">
+                  {progressPercent < 100 ? `ETA: ${Math.max(1, Math.ceil((100 - progressPercent) / 15))}s` : 'Done'}
+                </div>
+              </div>
             </div>
-            <div className="text-xs mono text-emerald-500/50">
-              {progressPercent < 100 ? `ETA: ${Math.max(0, Math.ceil((5000 - (progressPercent / 100) * 5000) / 1000))}s` : 'Ready'}
+
+            {/* Loading Dots */}
+            <div className="flex gap-2 justify-center pt-2">
+              <span className={`w-2 h-2 rounded-full transition-colors ${loadingPhase === 'connecting' ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-500'}`} />
+              <span className={`w-2 h-2 rounded-full transition-colors ${loadingPhase === 'scanning' ? 'bg-emerald-500 animate-pulse' : ['decrypting', 'loading', 'complete'].includes(loadingPhase) ? 'bg-emerald-500' : 'bg-zinc-700'}`} style={{ animationDelay: '200ms' }} />
+              <span className={`w-2 h-2 rounded-full transition-colors ${loadingPhase === 'decrypting' ? 'bg-emerald-500 animate-pulse' : ['loading', 'complete'].includes(loadingPhase) ? 'bg-emerald-500' : 'bg-zinc-700'}`} style={{ animationDelay: '400ms' }} />
+              <span className={`w-2 h-2 rounded-full transition-colors ${loadingPhase === 'loading' ? 'bg-emerald-500 animate-pulse' : loadingPhase === 'complete' ? 'bg-emerald-500' : 'bg-zinc-700'}`} style={{ animationDelay: '600ms' }} />
             </div>
           </div>
 
-          {/* Command line */}
-          <div className="space-y-2">
-            <div className="text-xs mono text-emerald-500/40">
-              $ vault --secure --load
+          {/* Real-time Stats Grid */}
+          <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 max-w-3xl">
+            {/* Writeups */}
+            <div className="border border-zinc-800 bg-zinc-950/50 p-4 rounded relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative">
+                <div className="mono text-[9px] text-zinc-600 uppercase mb-2 tracking-wider">
+                  Writeups
+                </div>
+                <div className="text-2xl font-black text-emerald-400 font-mono">
+                  {loadingStats.writeups}
+                </div>
+                <div className="mono text-[8px] text-zinc-700 mt-1">loaded</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 justify-center text-xs mono">
-              <span className="text-emerald-500">&gt;</span>
-              <span className="text-emerald-400 animate-pulse">
-                {progressPercent < 40 ? 'Establishing connection' : progressPercent < 70 ? 'Processing modules' : 'Mounting filesystem'}
-              </span>
+
+            {/* Platforms */}
+            <div className="border border-zinc-800 bg-zinc-950/50 p-4 rounded relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative">
+                <div className="mono text-[9px] text-zinc-600 uppercase mb-2 tracking-wider">
+                  Platforms
+                </div>
+                <div className="text-2xl font-black text-blue-400 font-mono">
+                  {loadingStats.platforms}
+                </div>
+                <div className="mono text-[8px] text-zinc-700 mt-1">detected</div>
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="border border-zinc-800 bg-zinc-950/50 p-4 rounded relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative">
+                <div className="mono text-[9px] text-zinc-600 uppercase mb-2 tracking-wider">
+                  Tags
+                </div>
+                <div className="text-2xl font-black text-purple-400 font-mono">
+                  {loadingStats.tags}
+                </div>
+                <div className="mono text-[8px] text-zinc-700 mt-1">indexed</div>
+              </div>
+            </div>
+
+            {/* Reading Time */}
+            <div className="border border-zinc-800 bg-zinc-950/50 p-4 rounded relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative">
+                <div className="mono text-[9px] text-zinc-600 uppercase mb-2 tracking-wider">
+                  Read Time
+                </div>
+                <div className="text-2xl font-black text-orange-400 font-mono">
+                  {loadingStats.minutes}
+                </div>
+                <div className="mono text-[8px] text-zinc-700 mt-1">minutes</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Terminal Output */}
+          <div className="w-full max-w-2xl mt-4">
+            <div className="border border-zinc-800 bg-zinc-950/80 rounded overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800 bg-zinc-900/50">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                <span className="mono text-[10px] text-zinc-600 ml-2">vault@cyb3rwo9f:~</span>
+              </div>
+              <div className="p-3 h-32 overflow-hidden">
+                <div className="space-y-1">
+                  {terminalLines.map((line, i) => (
+                    <div 
+                      key={i} 
+                      className={`mono text-[11px] ${line.startsWith('$') ? 'text-emerald-400' : line.startsWith('>') ? 'text-zinc-500' : 'text-zinc-400'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  {loadingPhase !== 'complete' && (
+                    <div className="mono text-[11px] text-emerald-400 flex items-center gap-1">
+                      <span className="animate-pulse">_</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
-        <style>{`
-          .delay-200 { animation-delay: 200ms; }
-          .delay-300 { animation-delay: 300ms; }
-          .delay-400 { animation-delay: 400ms; }
-          .delay-600 { animation-delay: 600ms; }
-        `}</style>
       </div>
     );
   }
