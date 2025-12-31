@@ -38,6 +38,18 @@ const LANGUAGE_COLORS: Record<string, string> = {
   'Nix': 'from-blue-300 to-blue-400',
 };
 
+// Featured languages - always visible even if 0%
+const FEATURED_LANGUAGES = [
+  'Python',
+  'TypeScript', 
+  'JavaScript',
+  'Go',
+  'Rust',
+  'Bash',
+  'SQL',
+  'C++',
+];
+
 export interface LanguageSkill {
   name: string;
   percentage: number;
@@ -176,48 +188,88 @@ export async function fetchLanguageStats(): Promise<LanguageSkill[]> {
     // Calculate total bytes
     const totalBytes = Object.values(languageTotals).reduce((sum, b) => sum + b, 0);
 
-    if (totalBytes === 0) {
-      console.warn('No language data found');
-      return [];
+    // Start with featured languages (always visible)
+    const skillsMap: Map<string, LanguageSkill> = new Map();
+    
+    // Initialize featured languages with 0
+    for (const lang of FEATURED_LANGUAGES) {
+      skillsMap.set(lang, {
+        name: lang,
+        bytes: 0,
+        percentage: 0,
+        color: LANGUAGE_COLORS[lang] || 'from-emerald-500 to-emerald-600',
+      });
     }
 
-    // Convert to percentages and sort
-    const skills: LanguageSkill[] = Object.entries(languageTotals)
-      .map(([name, bytes]) => ({
-        name,
-        bytes,
-        percentage: Math.round((bytes / totalBytes) * 100 * 10) / 10, // 1 decimal place
-        color: LANGUAGE_COLORS[name] || 'from-emerald-500 to-emerald-600',
-      }))
-      .sort((a, b) => b.bytes - a.bytes)
-      .slice(0, 10); // Top 10 languages
+    // Add actual GitHub data
+    for (const [name, bytes] of Object.entries(languageTotals)) {
+      // Map "Shell" to "Bash" for display
+      const displayName = name === 'Shell' ? 'Bash' : name;
+      const existing = skillsMap.get(displayName);
+      
+      if (existing) {
+        existing.bytes += bytes;
+      } else {
+        skillsMap.set(displayName, {
+          name: displayName,
+          bytes,
+          percentage: 0,
+          color: LANGUAGE_COLORS[displayName] || 'from-emerald-500 to-emerald-600',
+        });
+      }
+    }
 
-    // Normalize percentages to max 100 for display (scale top language to ~95%)
-    const maxPercentage = skills[0]?.percentage || 100;
-    const scaleFactor = 95 / maxPercentage;
+    // Calculate percentages
+    const skills = Array.from(skillsMap.values());
     
-    const normalizedSkills = skills.map(skill => ({
-      ...skill,
-      percentage: Math.round(skill.percentage * scaleFactor),
-    }));
+    if (totalBytes > 0) {
+      const maxBytes = Math.max(...skills.map(s => s.bytes));
+      
+      for (const skill of skills) {
+        if (skill.bytes > 0) {
+          // Scale so the top language is ~95%
+          skill.percentage = Math.round((skill.bytes / maxBytes) * 95);
+        }
+      }
+    }
 
-    console.log('Language stats:', normalizedSkills);
+    // Sort: languages with bytes first (descending), then featured with 0
+    skills.sort((a, b) => {
+      if (a.bytes > 0 && b.bytes === 0) return -1;
+      if (a.bytes === 0 && b.bytes > 0) return 1;
+      if (a.bytes === 0 && b.bytes === 0) {
+        // Both 0 - sort by featured order
+        const aIdx = FEATURED_LANGUAGES.indexOf(a.name);
+        const bIdx = FEATURED_LANGUAGES.indexOf(b.name);
+        return aIdx - bIdx;
+      }
+      return b.bytes - a.bytes;
+    });
+
+    console.log('Language stats:', skills);
 
     // Cache the result
-    languageCache = { data: normalizedSkills, timestamp: Date.now() };
+    languageCache = { data: skills, timestamp: Date.now() };
 
-    return normalizedSkills;
+    return skills;
   } catch (error) {
     console.error('Failed to fetch language stats:', error);
-    return [];
+    // Return featured languages with 0% on error
+    return FEATURED_LANGUAGES.map(name => ({
+      name,
+      bytes: 0,
+      percentage: 0,
+      color: LANGUAGE_COLORS[name] || 'from-emerald-500 to-emerald-600',
+    }));
   }
 }
 
 /**
- * Format bytes to human readable
+ * Format bytes to human readable (always shows KB for consistency)
  */
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
+  if (bytes === 0) return '0.0 KB';
+  if (bytes < 1024) return `${(bytes / 1024).toFixed(1)} KB`; // Small values as KB
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
