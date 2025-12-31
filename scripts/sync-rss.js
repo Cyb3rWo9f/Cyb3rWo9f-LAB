@@ -4,8 +4,8 @@
  * Runs every 15 minutes via GitHub Actions cron
  */
 
-const { Client, Databases, ID, Query } = require('node-appwrite');
-const xml2js = require('xml2js');
+import { Client, Databases, ID, Query } from 'node-appwrite';
+import xml2js from 'xml2js';
 
 // Environment variables (set in GitHub Secrets)
 const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT;
