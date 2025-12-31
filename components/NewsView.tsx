@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, ExternalLink, Shield, AlertTriangle, Info, Zap, RefreshCw } from 'lucide-react';
-import { fetchCybersecurityNews, refreshNews, syncBackgroundNews, formatDate, NewsArticle } from '../services/newsService';
+import { fetchCybersecurityNews, refreshNews, formatDate, NewsArticle } from '../services/newsService';
 
 interface NewsViewProps {
   onBack: () => void;
@@ -167,16 +167,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
       loadNews();
     }
 
-    // Background sync every 30 minutes
-    const syncInterval = setInterval(async () => {
-      const updatedNews = await syncBackgroundNews();
-      if (updatedNews) {
-        setNews(updatedNews);
-      }
-    }, 30 * 60 * 1000); // 30 minutes
-
     return () => {
-      clearInterval(syncInterval);
       if (fetchAnimRef.current) {
         clearInterval(fetchAnimRef.current);
         fetchAnimRef.current = null;
