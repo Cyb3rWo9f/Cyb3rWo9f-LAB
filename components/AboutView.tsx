@@ -198,7 +198,7 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                         }`}>
                           {skill.name}
                         </span>
-                        {hoveredSkill === skill.name && skill.bytes && (
+                        {hoveredSkill === skill.name && (
                           <span className="text-xs text-zinc-500 mono">
                             ({formatBytes(skill.bytes)})
                           </span>
