@@ -4,8 +4,9 @@
  * No authentication needed for public repos
  */
 
-const GITHUB_API_BASE = 'https://api.github.com';
-const GITHUB_USERNAME = 'Cyb3rWo9f'; // Your GitHub username
+// Load from environment variables (set in .env file)
+const GITHUB_API_BASE = import.meta.env.VITE_GITHUB_API_BASE;
+const GITHUB_USERNAME = import.meta.env.VITE_GITHUB_USERNAME;
 
 // Language color mapping (official GitHub colors)
 const LANGUAGE_COLORS: Record<string, string> = {
