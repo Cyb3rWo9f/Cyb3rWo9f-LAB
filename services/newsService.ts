@@ -73,7 +73,7 @@ export async function fetchCybersecurityNews(): Promise<NewsArticle[]> {
     console.log(`After filtering: ${articles.length} articles (from ${cachedDocs.length} total docs)`);
 
     if (articles.length > 0) {
-      console.log(`✓ Using Appwrite articles (${articles.length})`);
+      console.log(`Using Appwrite articles (${articles.length})`);
       memoryCache = { articles, timestamp: Date.now() };
       return articles;
     }
@@ -89,7 +89,7 @@ export async function fetchCybersecurityNews(): Promise<NewsArticle[]> {
 // Manual refresh function for UI button
 export async function refreshNews(): Promise<NewsArticle[]> {
   try {
-    console.log('🔄 Manual refresh triggered - reloading from database...');
+    console.log('Manual refresh triggered - reloading from database...');
     
     // Clear memory cache to ensure we get fresh data from Appwrite
     memoryCache = null;

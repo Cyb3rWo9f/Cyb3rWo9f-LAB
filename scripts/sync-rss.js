@@ -17,7 +17,7 @@ const RSS_FEED_URL = process.env.RSS_FEED_URL || 'https://feeds.feedburner.com/T
 
 // Validate environment
 if (!APPWRITE_ENDPOINT || !APPWRITE_PROJECT_ID || !APPWRITE_API_KEY || !APPWRITE_DATABASE_ID || !APPWRITE_COLLECTION_ID) {
-  console.error('❌ Missing required environment variables');
+  console.error('Missing required environment variables');
   process.exit(1);
 }
 
@@ -80,7 +80,7 @@ function stripHtml(html) {
 
 // Fetch and parse RSS feed
 async function fetchRSS() {
-  console.log(`📡 Fetching RSS from: ${RSS_FEED_URL}`);
+  console.log(`Fetching RSS from: ${RSS_FEED_URL}`);
   
   const response = await fetch(RSS_FEED_URL);
   if (!response.ok) {
@@ -116,7 +116,7 @@ async function fetchRSS() {
     });
   }
   
-  console.log(`✓ Parsed ${articles.length} articles from RSS`);
+  console.log(`Parsed ${articles.length} articles from RSS`);
   return articles;
 }
 
@@ -145,7 +145,7 @@ async function getExistingIds() {
     offset += limit;
   }
   
-  console.log(`📊 Found ${existingIds.size} existing articles in database`);
+  console.log(`Found ${existingIds.size} existing articles in database`);
   return existingIds;
 }
 
@@ -180,14 +180,14 @@ async function storeArticles(articles, existingIds) {
         }
       );
       created++;
-      console.log(`✓ Created: ${article.title.substring(0, 50)}...`);
+      console.log(`Created: ${article.title.substring(0, 50)}...`);
     } catch (err) {
       if (err.code === 409) {
         // Document already exists (race condition)
         skipped++;
       } else {
         failed++;
-        console.error(`❌ Failed to create article: ${err.message}`);
+        console.error(`Failed to create article: ${err.message}`);
       }
     }
   }
@@ -197,15 +197,15 @@ async function storeArticles(articles, existingIds) {
 
 // Main execution
 async function main() {
-  console.log('🚀 Starting RSS sync...');
-  console.log(`📅 Time: ${new Date().toISOString()}`);
+  console.log('Starting RSS sync...');
+  console.log(`Time: ${new Date().toISOString()}`);
   
   try {
     // 1. Fetch RSS feed
     const articles = await fetchRSS();
     
     if (articles.length === 0) {
-      console.log('⚠️ No articles found in RSS feed');
+      console.log('No articles found in RSS feed');
       return;
     }
     
@@ -215,14 +215,14 @@ async function main() {
     // 3. Store new articles
     const result = await storeArticles(articles, existingIds);
     
-    console.log('\n📊 Sync Summary:');
-    console.log(`   ✅ Created: ${result.created}`);
-    console.log(`   ⏭️  Skipped: ${result.skipped}`);
-    console.log(`   ❌ Failed: ${result.failed}`);
-    console.log('\n✓ RSS sync complete!');
+    console.log('\nSync Summary:');
+    console.log(`   Created: ${result.created}`);
+    console.log(`   Skipped: ${result.skipped}`);
+    console.log(`   Failed: ${result.failed}`);
+    console.log('\nRSS sync complete!');
     
   } catch (error) {
-    console.error('❌ Sync failed:', error);
+    console.error('Sync failed:', error);
     process.exit(1);
   }
 }

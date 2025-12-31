@@ -35,18 +35,18 @@ const databases = new Databases(client);
 async function ensureDatabase(dbId) {
   try {
     await databases.get(dbId);
-    console.log(`✓ Database exists: ${dbId}`);
+    console.log(`Database exists: ${dbId}`);
   } catch (err) {
     console.log(`Creating database: ${dbId}`);
     await databases.create(dbId, 'News Database');
-    console.log('✓ Database created');
+    console.log('Database created');
   }
 }
 
 async function ensureCollection(dbId, collectionId) {
   try {
     await databases.getCollection(dbId, collectionId);
-    console.log(`✓ Collection exists: ${collectionId}`);
+    console.log(`Collection exists: ${collectionId}`);
     return;
   } catch (err) {
     console.log(`Creating collection: ${collectionId}`);
@@ -56,20 +56,20 @@ async function ensureCollection(dbId, collectionId) {
       Permission.update(Role.users()),
       Permission.delete(Role.users())
     ]);
-    console.log('✓ Collection created');
+    console.log('Collection created');
   }
 }
 
 async function ensureAttribute(createFn, label) {
   try {
     await createFn();
-    console.log(`✓ Attribute ensured: ${label}`);
+    console.log(`Attribute ensured: ${label}`);
   } catch (err) {
     // Ignore "attribute already exists"
     if (err?.response?.code === 409) {
       console.log(`↺ Attribute already exists: ${label}`);
     } else {
-      console.warn(`⚠️ Attribute issue (${label}):`, err.message || err);
+      console.warn(`Attribute issue (${label}):`, err.message || err);
     }
   }
 }
@@ -77,12 +77,12 @@ async function ensureAttribute(createFn, label) {
 async function ensureIndex(createFn, label) {
   try {
     await createFn();
-    console.log(`✓ Index ensured: ${label}`);
+    console.log(`Index ensured: ${label}`);
   } catch (err) {
     if (err?.response?.code === 409) {
       console.log(`↺ Index already exists: ${label}`);
     } else {
-      console.warn(`⚠️ Index issue (${label}):`, err.message || err);
+      console.warn(`Index issue (${label}):`, err.message || err);
     }
   }
 }
@@ -157,16 +157,16 @@ async function clearDocuments(dbId, collectionId) {
       }
     }
   }
-  console.log(`✓ Cleared documents: ${totalDeleted}`);
+  console.log(`Cleared documents: ${totalDeleted}`);
 }
 
 async function main() {
-  console.log('🚨 Resetting Appwrite database + collection...');
+  console.log('Resetting Appwrite database + collection...');
   await ensureDatabase(APPWRITE_DATABASE_ID);
   await ensureCollection(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID);
   await ensureSchema(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID);
   await clearDocuments(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID);
-  console.log('✅ Reset complete. Collection is empty and schema verified.');
+  console.log('Reset complete. Collection is empty and schema verified.');
   console.log('You can now run your app to repopulate from the RSS background sync.');
 }
 

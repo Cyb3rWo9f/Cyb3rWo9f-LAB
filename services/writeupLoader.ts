@@ -45,7 +45,7 @@ function calculateReadingTime(content: string): string {
 export const loadAllWriteups = async (): Promise<Writeup[]> => {
   const bucketId = import.meta.env.VITE_APPWRITE_BUCKET_ID;
   if (!bucketId) {
-    console.error('❌ VITE_APPWRITE_BUCKET_ID not configured in .env');
+    console.error('VITE_APPWRITE_BUCKET_ID not configured in .env');
     return [];
   }
   
@@ -60,7 +60,7 @@ export const loadWriteupsFromStorage = async (): Promise<Writeup[]> => {
   const files = await listFilesInStorage();
   
   if (files.length === 0) {
-    console.warn('⚠️ No files found in Appwrite storage bucket.');
+    console.warn('No files found in Appwrite storage bucket.');
     return writeups;
   }
 
@@ -74,7 +74,7 @@ export const loadWriteupsFromStorage = async (): Promise<Writeup[]> => {
       const content = await getFileFromStorage(file.$id);
       
       if (!content) {
-        console.warn(`⚠️ Failed to download writeup: ${file.name} (ID: ${file.$id})`);
+        console.warn(`Failed to download writeup: ${file.name} (ID: ${file.$id})`);
         continue;
       }
 
@@ -94,16 +94,16 @@ export const loadWriteupsFromStorage = async (): Promise<Writeup[]> => {
         hints: Array.isArray(data.hints) ? data.hints : undefined
       });
 
-      console.log(`✓ Loaded writeup: ${file.name}`);
+      console.log(`Loaded writeup: ${file.name}`);
     } catch (e) {
       console.error(`Failed to load writeup from storage: ${file.name}`, e);
     }
   }
 
   if (writeups.length === 0) {
-    console.warn('⚠️ No writeups found in Appwrite storage. Ensure files are uploaded and bucket is configured.');
+    console.warn('No writeups found in Appwrite storage. Ensure files are uploaded and bucket is configured.');
   } else {
-    console.log(`✓ Successfully loaded ${writeups.length} writeups from Appwrite storage`);
+    console.log(`Successfully loaded ${writeups.length} writeups from Appwrite storage`);
   }
 
   return writeups;

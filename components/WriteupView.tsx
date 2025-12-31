@@ -396,7 +396,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-200" />
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-400" />
                 </div>
-                <span className="text-sm mono text-emerald-300 transition-colors">{isConnecting ? 'Connecting to vault' : '✓ Connected'}</span>
+                <span className="text-sm mono text-emerald-300 transition-colors">{isConnecting ? 'Connecting to vault' : 'Connected'}</span>
               </div>
               
               <div className={`flex items-center justify-center gap-4 transition-all duration-300 ${isDecrypting ? 'opacity-100' : 'opacity-50'}`}>
@@ -405,7 +405,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-200" />
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-400" />
                 </div>
-                <span className="text-sm mono text-emerald-400 transition-colors">{isDecrypting ? 'Decrypting modules' : '✓ Decrypted'}</span>
+                <span className="text-sm mono text-emerald-400 transition-colors">{isDecrypting ? 'Decrypting modules' : 'Decrypted'}</span>
               </div>
               
               <div className={`flex items-center justify-center gap-4 transition-all duration-300 ${isLoading ? 'opacity-100' : 'opacity-50'}`}>
@@ -414,7 +414,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-200" />
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse delay-400" />
                 </div>
-                <span className="text-sm mono text-emerald-400 transition-colors">{isLoading ? 'Loading writeups' : '✓ Complete'}</span>
+                <span className="text-sm mono text-emerald-400 transition-colors">{isLoading ? 'Loading writeups' : 'Complete'}</span>
               </div>
             </div>
           </div>
@@ -444,7 +444,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, onLogin }
               $ vault --secure --load
             </div>
             <div className="flex items-center gap-2 justify-center text-xs mono">
-              <span className="text-emerald-500">→</span>
+              <span className="text-emerald-500">&gt;</span>
               <span className="text-emerald-400 animate-pulse">
                 {progressPercent < 40 ? 'Establishing connection' : progressPercent < 70 ? 'Processing modules' : 'Mounting filesystem'}
               </span>

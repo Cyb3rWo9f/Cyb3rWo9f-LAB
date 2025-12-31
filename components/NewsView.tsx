@@ -147,7 +147,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
           }
         }, 50);
         
-        console.log(`📡 News loaded: ${validData.length} valid articles ready for display`);
+        console.log(`News loaded: ${validData.length} valid articles ready for display`);
         
         if (progressInterval) clearInterval(progressInterval);
         
@@ -201,7 +201,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
       seen.add(article.id);
       return true;
     });
-    console.log(`✓ Deduplication: ${news.length} → ${unique.length} articles`);
+    console.log(`Deduplication: ${news.length} -> ${unique.length} articles`);
     return unique;
   }, [news]);
 
@@ -210,7 +210,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
     : uniqueNews.filter(article => article.category === filter);
 
   useEffect(() => {
-    console.log(`🔍 Filter: ${filter}, Articles: ${uniqueNews.length} → ${filteredNews.length}`);
+    console.log(`Filter: ${filter}, Articles: ${uniqueNews.length} -> ${filteredNews.length}`);
     setPage(1);
   }, [filter, pageSize, news]);
 
@@ -219,7 +219,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedNews = filteredNews.slice(startIndex, startIndex + pageSize);
 
-  console.log(`📊 Pagination: ${filteredNews.length} total, page ${currentPage}/${totalPages}, showing ${paginatedNews.length} articles`);
+  console.log(`Pagination: ${filteredNews.length} total, page ${currentPage}/${totalPages}, showing ${paginatedNews.length} articles`);
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
