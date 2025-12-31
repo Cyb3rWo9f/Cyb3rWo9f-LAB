@@ -1,33 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Github, Mail, Code2 } from 'lucide-react';
+import { ArrowLeft, Github, Mail, Code2, RefreshCw } from 'lucide-react';
+import { fetchLanguageStats, fetchGitHubStats, getLastSyncTime, formatBytes, LanguageSkill, GitHubStats } from '../services/github';
 
 interface ToolsViewProps {
   onBack: () => void;
 }
 
-interface LanguageSkill {
-  name: string;
-  percentage: number;
-  color: string;
-}
-
 const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
-  const [skills, setSkills] = useState<LanguageSkill[]>([
-    { name: 'Python', percentage: 95, color: 'from-blue-500 to-blue-600' },
-    { name: 'TypeScript', percentage: 88, color: 'from-blue-600 to-blue-700' },
-    { name: 'JavaScript', percentage: 92, color: 'from-yellow-500 to-yellow-600' },
-    { name: 'Go', percentage: 78, color: 'from-cyan-500 to-cyan-600' },
-    { name: 'Rust', percentage: 72, color: 'from-orange-600 to-orange-700' },
-    { name: 'Bash', percentage: 85, color: 'from-green-600 to-green-700' },
-    { name: 'SQL', percentage: 89, color: 'from-purple-500 to-purple-600' },
-    { name: 'C++', percentage: 75, color: 'from-red-500 to-red-600' },
-  ]);
-
-  const [loading, setLoading] = useState(false);
+  const [skills, setSkills] = useState<LanguageSkill[]>([]);
+  const [githubStats, setGithubStats] = useState<GitHubStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastSync, setLastSync] = useState<string>('');
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadGitHubData = async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      // Fetch both stats and language data in parallel
+      const [langData, statsData] = await Promise.all([
+        fetchLanguageStats(),
+        fetchGitHubStats(),
+      ]);
+
+      if (langData.length > 0) {
+        setSkills(langData);
+      }
+      setGithubStats(statsData);
+      setLastSync(getLastSyncTime());
+    } catch (err) {
+      console.error('Failed to load GitHub data:', err);
+      setError('Failed to fetch GitHub data. Using cached values.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    // TODO: Integrate with GitHub API to fetch actual language stats
+    loadGitHubData();
   }, []);
 
   return (
@@ -99,12 +117,12 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
 
           {/* Stats Card */}
           <div className="border border-emerald-500/20 bg-gradient-to-br from-zinc-950/80 to-zinc-950/40 rounded-lg p-6 hover:border-emerald-500/40 transition-all duration-300">
-            <h3 className="text-xs font-bold text-emerald-400 mb-6 uppercase tracking-[0.2em]">Metrics</h3>
+            <h3 className="text-xs font-bold text-emerald-400 mb-6 uppercase tracking-[0.2em]">GitHub Metrics</h3>
             <div className="space-y-5">
-              {[
-                { label: 'Repositories', value: '24', stat: '100%' },
-                { label: 'Contributions', value: '1.2k', stat: '75%' },
-                { label: 'Public Repos', value: '18', stat: '60%' },
+              {githubStats ? [
+                { label: 'Public Repos', value: githubStats.publicRepos.toString(), stat: `${Math.min(100, githubStats.publicRepos * 4)}%` },
+                { label: 'Followers', value: githubStats.followers.toString(), stat: `${Math.min(100, githubStats.followers * 2)}%` },
+                { label: 'Following', value: githubStats.following.toString(), stat: `${Math.min(100, githubStats.following * 2)}%` },
               ].map((item, i) => (
                 <div key={i} className="space-y-2">
                   <div className="flex items-end justify-between">
@@ -118,7 +136,9 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                     />
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-zinc-600 text-sm mono">Loading stats...</div>
+              )}
             </div>
           </div>
         </div>
@@ -126,13 +146,42 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
         {/* Right Column - Skills */}
         <div className="lg:col-span-2">
           <div className="border border-emerald-500/20 bg-gradient-to-br from-zinc-950/80 to-zinc-950/40 rounded-lg p-8 hover:border-emerald-500/40 transition-all duration-300">
-            <div className="flex items-center gap-3 mb-8">
-              <Code2 size={20} className="text-emerald-500" />
-              <h3 className="text-lg font-bold text-white uppercase tracking-[0.15em]">Programming Languages</h3>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <Code2 size={20} className="text-emerald-500" />
+                <h3 className="text-lg font-bold text-white uppercase tracking-[0.15em]">Programming Languages</h3>
+              </div>
+              <button
+                onClick={() => loadGitHubData(true)}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-400 hover:text-emerald-400 border border-zinc-800 hover:border-emerald-500/50 rounded transition-all disabled:opacity-50"
+              >
+                <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                {refreshing ? 'Syncing...' : 'Refresh'}
+              </button>
             </div>
 
+            {error && (
+              <div className="mb-4 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs">
+                {error}
+              </div>
+            )}
+
             {loading ? (
-              <div className="text-zinc-600 text-sm mono">Fetching GitHub data...</div>
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="space-y-2 animate-pulse">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-20 bg-zinc-800 rounded" />
+                      <div className="h-4 w-10 bg-zinc-800 rounded" />
+                    </div>
+                    <div className="h-2.5 bg-zinc-800 rounded-full" />
+                  </div>
+                ))}
+                <p className="text-zinc-600 text-sm mono mt-4">Fetching data from GitHub...</p>
+              </div>
+            ) : skills.length === 0 ? (
+              <div className="text-zinc-500 text-sm">No language data available. Make sure repositories are public.</div>
             ) : (
               <div className="space-y-6">
                 {skills.map((skill) => (
@@ -143,11 +192,18 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                     onMouseLeave={() => setHoveredSkill(null)}
                   >
                     <div className="flex justify-between items-center">
-                      <span className={`text-sm font-semibold transition-all duration-300 ${
-                        hoveredSkill === skill.name ? 'text-emerald-400' : 'text-zinc-300'
-                      }`}>
-                        {skill.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-semibold transition-all duration-300 ${
+                          hoveredSkill === skill.name ? 'text-emerald-400' : 'text-zinc-300'
+                        }`}>
+                          {skill.name}
+                        </span>
+                        {hoveredSkill === skill.name && skill.bytes && (
+                          <span className="text-xs text-zinc-500 mono">
+                            ({formatBytes(skill.bytes)})
+                          </span>
+                        )}
+                      </div>
                       <span className={`text-xs font-bold transition-all duration-300 ${
                         hoveredSkill === skill.name ? 'text-emerald-400' : 'text-emerald-500/70'
                       }`}>
@@ -173,7 +229,7 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
 
             <div className="mt-8 pt-8 border-t border-emerald-500/10">
               <p className="text-xs text-zinc-500 mono leading-relaxed">
-                Proficiency levels reflect hands-on experience across diverse projects and years of continuous learning. These metrics are dynamically calculated from public GitHub repositories, representing active contributions and language usage patterns. Last synced: <span className="text-emerald-400">auto-updated weekly</span>.
+                Proficiency levels are calculated from actual code in public GitHub repositories, measured by bytes of code per language across all non-forked repos. Last synced: <span className="text-emerald-400">{lastSync || 'syncing...'}</span>.
               </p>
             </div>
           </div>
