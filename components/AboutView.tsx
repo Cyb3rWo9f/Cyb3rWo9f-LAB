@@ -192,9 +192,9 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
             <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-emerald-500/40" />
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-              <div className="flex items-center gap-3">
-                <Code2 size={18} className="text-emerald-500" />
-                <h3 className="text-base font-bold text-white uppercase tracking-[0.12em]">Programming Languages</h3>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Code2 size={18} className="text-emerald-500 flex-shrink-0" />
+                <h3 className="text-xs sm:text-base font-bold text-white uppercase tracking-[0.08em] sm:tracking-[0.12em]">Programming Languages</h3>
               </div>
               <button
                 onClick={() => loadGitHubData(true)}

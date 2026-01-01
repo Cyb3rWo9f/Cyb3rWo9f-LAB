@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { LogOut, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
+import { LogOut, Loader2, ShieldCheck, ShieldX, EyeOff } from 'lucide-react';
 import { NAV_ITEMS } from '../constants';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,7 +10,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
-  const { user, isLoading, isLoggedIn, isApproved, login, logout, userInitials } = useAuth();
+  const { user, isLoading, isLoggedIn, isApproved, isAnonymous, login, logout, userInitials } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [hoverStyle, setHoverStyle] = useState<React.CSSProperties>({ opacity: 0, width: 0, left: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -94,8 +94,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-emerald-500/50 text-white text-sm font-bold px-3 py-2 rounded-full transition-all duration-300"
               >
                 {/* User Avatar */}
-                <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-black text-xs font-bold">
-                  {userInitials}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: isAnonymous ? 'rgba(139, 92, 246, 0.3)' : 'rgb(16, 185, 129)' }}>
+                  {isAnonymous ? (
+                    <EyeOff size={16} className="text-violet-400" />
+                  ) : (
+                    <span className="text-black">{userInitials}</span>
+                  )}
                 </div>
                 <span className="hidden sm:inline max-w-[100px] truncate">{user.name}</span>
                 <svg className={`w-3 h-3 transition-transform ${showDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Clock, Tag, ChevronLeft, ChevronRight, Loader2, Database, AlertTriangle, Server, Cpu, Flag, Box, Shield, BookOpen, Search, Zap, Lock, FileText, Layers } from 'lucide-react';
+import { Calendar, Clock, Tag, ChevronLeft, ChevronRight, Loader2, Database, AlertTriangle, Server, Cpu, Flag, Box, Shield, BookOpen, Search, Zap, Lock, FileText, Layers, LogIn } from 'lucide-react';
 import { PLATFORMS_METRICS } from '../constants';
 import { Writeup } from '../types';
 import { loadAllWriteups } from '../services/writeupLoader';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
+import { useAuth } from '../context/AuthContext';
 
 interface WriteupViewProps {
   onBack: () => void;
@@ -13,7 +14,10 @@ interface WriteupViewProps {
   onLogin?: () => void;
 }
 
-const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, isApproved, onLogin }) => {
+const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
+  // Use auth context directly
+  const { isAuthenticated, isApproved, login, isLoading: authLoading } = useAuth();
+  
   const [writeups, setWriteups] = useState<Writeup[]>([]);
   const [selectedWriteup, setSelectedWriteup] = useState<Writeup | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1079,8 +1083,8 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, isApprove
   }
 
   if (selectedWriteup) {
-    // Locked content requires being logged in AND approved
-    const canAccessLocked = isLoggedIn && isApproved;
+    // Locked content requires being authenticated AND approved
+    const canAccessLocked = isAuthenticated && isApproved;
     
     if (selectedWriteup.locked && !canAccessLocked) {
       return (
@@ -1223,7 +1227,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, isApprove
             {/* Action Footer */}
             <div className="relative border-t border-zinc-800 p-3 sm:p-4 bg-zinc-900/30">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                {!isLoggedIn ? (
+                {!isAuthenticated ? (
                   <>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -1233,11 +1237,11 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, isApprove
                       <p className="text-[11px] sm:text-[12px] text-zinc-600">Sign in with Google to request access to locked content.</p>
                     </div>
                     <button 
-                      onClick={onLogin} 
+                      onClick={login} 
                       className="group flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-5 sm:px-6 py-2.5 rounded-sm font-bold mono text-[9px] sm:text-[10px] uppercase shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40"
                     >
-                      <Lock size={12} className="group-hover:scale-110 transition-transform" />
-                      Login to Unlock
+                      <LogIn size={12} className="group-hover:scale-110 transition-transform" />
+                      Sign In to Unlock
                     </button>
                   </>
                 ) : (
@@ -1670,7 +1674,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, isApprove
                   {w.locked && (
                     <>
                       <div className="w-px h-3 bg-zinc-800" />
-                      {isLoggedIn && isApproved ? (
+                      {isAuthenticated && isApproved ? (
                         <span className="flex items-center gap-1 mono text-[8px] sm:text-[9px] text-emerald-500 font-bold uppercase tracking-wider">
                           <Lock size={10} />
                           Unlocked
@@ -1715,7 +1719,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack, isLoggedIn, isApprove
                 )}
 
                 {/* Hints for locked content */}
-                {w.locked && !(isLoggedIn && isApproved) && w.hints && w.hints.length > 0 && (
+                {w.locked && !(isAuthenticated && isApproved) && w.hints && w.hints.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                     {w.hints.slice(0, 2).map((hint, i) => (
                       <div key={i} className="border border-emerald-500/20 bg-emerald-500/5 p-2.5 sm:p-3 rounded-sm">

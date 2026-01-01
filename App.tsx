@@ -5,7 +5,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import SystemDashboard from './components/SystemDashboard';
 import CookieConsent from './components/CookieConsent';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 const PlatformTimeline = React.lazy(() => import('./components/PlatformTimeline'));
 const WriteupView = React.lazy(() => import('./components/WriteupView'));
 const NewsView = React.lazy(() => import('./components/NewsView'));
@@ -15,7 +15,6 @@ const AboutView = React.lazy(() => import('./components/AboutView'));
 // Inner app component that uses auth context
 const AppContent: React.FC = () => {
   const [view, setView] = useState('home');
-  const { isLoggedIn, isApproved, login } = useAuth();
 
   return (
     <div className="min-h-screen selection:bg-emerald-500 selection:text-black bg-black overflow-x-hidden">
@@ -44,7 +43,7 @@ const AppContent: React.FC = () => {
           <div className="w-full flex justify-center">
             {view === 'archives' ? (
               <Suspense fallback={<div className="mono text-[10px] text-zinc-600">Loading archives…</div>}>
-                <WriteupView onBack={() => setView('home')} isLoggedIn={isLoggedIn} isApproved={isApproved} onLogin={login} />
+                <WriteupView onBack={() => setView('home')} />
               </Suspense>
             ) : view === 'news' ? (
               <Suspense fallback={<div className="mono text-[10px] text-zinc-600">Loading news feed…</div>}>

@@ -82,7 +82,7 @@ const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
         
         <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter select-none inline-flex items-center leading-none">
           {/* Container with fixed width to prevent jumping */}
-          <span className="relative inline-block" style={{ minWidth: `${fullText.length * 0.6}em` }}>
+          <span className="relative inline-block" style={{ minWidth: `${fullText.length * 0.57}em` }}>
             {/* Invisible text to maintain width */}
             <span className="invisible">{fullText}</span>
             {/* Rendered characters with gradient - absolute positioned */}
