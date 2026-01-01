@@ -200,21 +200,27 @@ async function syncRSS() {
       try {
         const { docId, ...data } = article;
         
-        // Check if document exists first
-        let exists = false;
+        // Try update first (most common case for existing articles)
         try {
-          await databases.getDocument(dbId, collId, docId);
-          exists = true;
-        } catch (e) {
-          exists = false;
-        }
-        
-        if (exists) {
           await databases.updateDocument(dbId, collId, docId, data);
           updated++;
-        } else {
-          await databases.createDocument(dbId, collId, docId, data);
-          created++;
+        } catch (updateErr) {
+          // If document doesn't exist (404), create it
+          if (updateErr.code === 404) {
+            try {
+              await databases.createDocument(dbId, collId, docId, data);
+              created++;
+            } catch (createErr) {
+              // If already exists (409/race condition), count as updated
+              if (createErr.code === 409 || createErr.message?.includes('already exists')) {
+                updated++;
+              } else {
+                throw createErr;
+              }
+            }
+          } else {
+            throw updateErr;
+          }
         }
       } catch (err) {
         errors++;
