@@ -179,7 +179,7 @@ async function syncRSS() {
       articles.push({
         docId: makeDocId(link),
         title: title.slice(0, 255),
-        description: description.slice(0, 500),
+        description: description.slice(0, 255),
         url: link.slice(0, 255),
         source: 'The Hacker News',
         publishedAt: pubDate,
