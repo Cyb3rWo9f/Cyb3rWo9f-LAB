@@ -210,6 +210,10 @@ async function syncRSS() {
         }
       } catch (err) {
         errors++;
+        // Log first few errors for debugging
+        if (errors <= 3) {
+          log('RSS', `Error on "${article.title.slice(0, 30)}...": ${err.message}`, 'error');
+        }
       }
     }
 

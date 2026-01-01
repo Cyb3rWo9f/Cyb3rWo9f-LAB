@@ -17,10 +17,11 @@ export interface PlatformStats {
   updatedAt?: string;
 }
 
-const endpoint = (import.meta as any)?.env?.VITE_APPWRITE_ENDPOINT;
-const projectId = (import.meta as any)?.env?.VITE_APPWRITE_PROJECT_ID;
-const databaseId = (import.meta as any)?.env?.VITE_APPWRITE_DATABASE_ID;
-const collectionId = (import.meta as any)?.env?.VITE_APPWRITE_PLATFORM_COLLECTION_ID;
+// Access Vite environment variables
+const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT as string | undefined;
+const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID as string | undefined;
+const databaseId = import.meta.env.VITE_APPWRITE_DATABASE_ID as string | undefined;
+const collectionId = import.meta.env.VITE_APPWRITE_PLATFORM_COLLECTION_ID as string | undefined;
 
 const client = new Client();
 if (endpoint && projectId) {
