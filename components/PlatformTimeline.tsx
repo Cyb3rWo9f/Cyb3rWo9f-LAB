@@ -1,131 +1,341 @@
 
-import React from 'react';
-import { PLATFORMS_METRICS } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { formatRank } from '../services/platformStats';
+import { fetchPlatformStats, type PlatformStats } from '../services/platformStatsClient';
+
+interface PlatformData {
+  id: string; // Document ID in Appwrite (tryhackme, hackthebox, offsec)
+  name: string;
+  description: string;
+  pwned: number;
+  rank: string;
+  percentile: string;
+  color: string;
+  link: string;
+  syncFromDb: boolean; // Whether to sync from Appwrite DB
+}
+
+// Default values (used if DB not available yet)
+const PLATFORMS: PlatformData[] = [
+  { 
+    id: 'tryhackme',
+    name: 'TRYHACKME', 
+    description: 'Gamified learning paths & CTF challenges',
+    pwned: 142,
+    rank: '#1,204',
+    percentile: 'TOP 1%',
+    color: '#10b981',
+    link: 'https://tryhackme.com/p/Cyb3rWo9f',
+    syncFromDb: true,
+  },
+  { 
+    id: 'hackthebox',
+    name: 'HACKTHEBOX', 
+    description: 'Advanced penetration testing labs',
+    pwned: 64,
+    rank: '#3,450',
+    percentile: 'PRO HACKER',
+    color: '#9fef00',
+    link: 'https://app.hackthebox.com/profile/Cyb3rWo9f',
+    syncFromDb: true,
+  },
+  { 
+    id: 'vulnhub',
+    name: 'VULNHUB', 
+    description: 'Local VM security labs & boot2root',
+    pwned: 28,
+    rank: 'LOCAL',
+    percentile: 'MASTER',
+    color: '#8b5cf6',
+    link: 'https://vulnhub.com',
+    syncFromDb: false, // No API for VulnHub
+  },
+  { 
+    id: 'offsec',
+    name: 'OFFSEC PG', 
+    description: 'Professional proving grounds',
+    pwned: 19,
+    rank: '#892',
+    percentile: 'ELITE',
+    color: '#f59e0b',
+    link: 'https://portal.offsec.com',
+    syncFromDb: true,
+  },
+];
 
 const PlatformTimeline: React.FC = () => {
-  const CARD_HEIGHT = 110;
-  const GAP = 80; // Vertical gap between cards
-  const CENTER_X = 256; 
-  const INNER_PADDING = 32; 
+  const [spineHeight, setSpineHeight] = useState(0);
+  const [visibleCards, setVisibleCards] = useState<number[]>([]);
+  const [platforms, setPlatforms] = useState<PlatformData[]>(PLATFORMS);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // Start spine animation
+    const spineTimer = setTimeout(() => {
+      setSpineHeight(100);
+    }, 200);
+
+    // Reveal cards sequentially
+    PLATFORMS.forEach((_, index) => {
+      setTimeout(() => {
+        setVisibleCards(prev => [...prev, index]);
+      }, 400 + (index * 400));
+    });
+
+    return () => clearTimeout(spineTimer);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const applyDbStats = (platformId: string, stats: PlatformStats) => {
+      setPlatforms(prev => prev.map((p) => {
+        if (p.id === platformId) {
+          return {
+            ...p,
+            pwned: stats.pwned ?? p.pwned,
+            rank: stats.rank ? formatRank(stats.rank) : p.rank,
+            percentile: stats.percentile ?? p.percentile,
+            link: stats.profileUrl ?? p.link,
+          };
+        }
+        return p;
+      }));
+    };
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      let latestUpdate: Date | null = null;
+
+      // Fetch stats ONLY from Appwrite DB (GitHub workflow handles API sync)
+      const platformsToSync = PLATFORMS.filter(p => p.syncFromDb);
+      const results = await Promise.allSettled(
+        platformsToSync.map(async (p) => {
+          const stats = await fetchPlatformStats(p.id);
+          if (stats && isMounted) {
+            applyDbStats(p.id, stats);
+            if (stats.updatedAt) {
+              const d = new Date(stats.updatedAt);
+              if (!latestUpdate || d > latestUpdate) latestUpdate = d;
+            }
+          }
+          return stats;
+        })
+      );
+
+      // Check if any succeeded
+      const anySuccess = results.some(r => r.status === 'fulfilled' && r.value);
+      
+      if (!anySuccess && isMounted) {
+        // No DB data available yet - show message (workflow will populate it)
+        setError('Stats syncing... (using default values)');
+      }
+
+      if (isMounted) {
+        setLastUpdated(latestUpdate);
+        setLoading(false);
+      }
+    };
+
+    load();
+    return () => { isMounted = false; };
+  }, []);
 
   return (
-    <div className="relative w-full py-8 flex flex-col items-center">
-      {/* Vertical Spine with segment connectors (no horizontals) */}
-      <div className="absolute inset-0 pointer-events-none hidden md:block" aria-hidden="true">
-        <svg className="w-full h-full" style={{ minHeight: (PLATFORMS_METRICS.length * (CARD_HEIGHT + GAP)) }}>
-          <defs>
-            {/* No arrowheads or glow; simple vertical trace styling only */}
-          </defs>
-
-          {PLATFORMS_METRICS.map((_, index) => {
-            if (index === PLATFORMS_METRICS.length - 1) return null;
-
-            const isCurrentRight = index % 2 === 0;
-            const startY = 48 + index * (CARD_HEIGHT + GAP);
-            const endY = 48 + (index + 1) * (CARD_HEIGHT + GAP);
-            // Only vertical connector line at CENTER_X
-            const pathVertical = `M ${CENTER_X} ${startY} V ${endY}`;
-
-            return (
-              <g key={`circuit-v2-${index}`}>
-                {/* Base Structural Trace (vertical only) */}
-                <path d={pathVertical} fill="none" stroke="#09090b" strokeWidth="4" strokeLinecap="round" />
-                <path d={pathVertical} fill="none" stroke="#18181b" strokeWidth="1" strokeLinecap="round" />
-
-                {/* Passive Signal Line */}
-                <path d={pathVertical} fill="none" stroke="rgba(16, 185, 129, 0.15)" strokeWidth="1" />
-
-                {/* Junction markers with blink */}
-                <rect x={CENTER_X - 2} y={startY - 2} width="4" height="4" fill="#0a0a0b" stroke="#27272a" strokeWidth="1" />
-                <rect x={CENTER_X - 2} y={endY - 2} width="4" height="4" fill="#0a0a0b" stroke="#27272a" strokeWidth="1" />
-                <circle cx={CENTER_X} cy={startY} r="1" fill="#10b981">
-                  <animate attributeName="opacity" values="0;1;0" dur="1.6s" repeatCount="indefinite" />
-                </circle>
-                <circle cx={CENTER_X} cy={endY} r="1" fill="#10b981">
-                  <animate attributeName="opacity" values="0;1;0" dur="1.6s" begin="0.8s" repeatCount="indefinite" />
-                </circle>
-
-                {/* Packets moving along the vertical spine */}
-                <circle r="1.6" fill="#10b981">
-                  <animateMotion dur="2.4s" repeatCount="indefinite" path={pathVertical} />
-                </circle>
-                <circle r="1.2" fill="#34d399" opacity="0.9">
-                  <animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path={pathVertical} />
-                </circle>
-              </g>
-            );
-          })}
-        </svg>
+    <div className="relative w-full py-8">
+      {/* Section Header */}
+      <div className="flex items-center gap-4 mb-10 px-4">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-emerald-500 rotate-45" />
+          <span className="text-[10px] mono uppercase tracking-[0.3em] text-zinc-500 font-bold">
+            Platform Progress
+          </span>
+        </div>
+        <div className="flex-1 h-px bg-gradient-to-r from-zinc-800 to-transparent" />
       </div>
 
-      <div className="flex flex-col gap-[80px] w-full relative z-10">
-        {PLATFORMS_METRICS.map((platform, index) => {
-          const isRight = index % 2 === 0;
-          const nodeID = `X-0${index + 1}`;
+      {/* Status Row */}
+      <div className="px-4 -mt-6 mb-8 flex items-center gap-3 text-[11px] mono text-zinc-500">
+        {loading && <span className="text-emerald-400">Syncing platforms…</span>}
+        {error && <span className="text-red-400">{error}</span>}
+        {!loading && !error && lastUpdated && (
+          <span className="text-zinc-600">Updated {lastUpdated.toLocaleString()}</span>
+        )}
+      </div>
 
-          return (
-            <div key={platform.name} className={`relative flex items-center w-full group ${isRight ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-              <div className={`w-full md:w-1/2 flex ${isRight ? 'md:justify-start md:pl-8' : 'md:justify-end md:pr-8'} pl-10`}>
-                <div className="relative w-[240px] min-w-[240px]">
-                  
-                  {/* Identification Tag */}
-                  <div className={`absolute -top-5 flex items-center gap-2 mono text-[8px] font-bold tracking-[0.3em] ${isRight ? 'right-0 text-right' : 'left-0 text-left'}`}> 
-                    <span className="text-emerald-500/40">NODE::{nodeID}</span>
-                  </div>
+      {/* Timeline Container */}
+      <div className="relative max-w-2xl mx-auto">
+        {/* Central Spine - Animated Growth */}
+        <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 hidden md:block overflow-hidden">
+          <div 
+            className="absolute top-0 left-0 w-full bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-zinc-800 transition-all duration-[1600ms] ease-out"
+            style={{ height: `${spineHeight}%` }}
+          />
+          {/* Animated pulse traveling down the spine */}
+          {spineHeight === 100 && (
+            <div className="absolute w-1 h-16 bg-gradient-to-b from-transparent via-emerald-500/60 to-transparent -left-[1px] animate-[pulse-down_3s_ease-in-out_infinite]" />
+          )}
+        </div>
 
-                  {/* Glass-Morphic Module */}
-                  <div className={`
-                    relative bg-zinc-950/40 border border-zinc-900/80 p-4 rounded-sm transition-all duration-200 
-                    hover:border-emerald-500/40 hover:bg-emerald-500/[0.02]
-                    w-full h-[110px] flex flex-col justify-center overflow-hidden
-                    cursor-crosshair
-                  `}>
-                    
-                    {/* Industrial Corner Decors */}
-                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-800 group-hover:border-emerald-500/50 transition-colors" />
-                    <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-800 group-hover:border-emerald-500/50 transition-colors" />
-                    <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-800 group-hover:border-emerald-500/50 transition-colors" />
-                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-800 group-hover:border-emerald-500/50 transition-colors" />
-
-                    {/* Inner Scanner Line Animation */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/[0.03] to-transparent h-1/2 w-full -translate-y-full group-hover:animate-[scan_2s_ease-in-out_infinite] pointer-events-none" />
-
-                    {/* Header Layout */}
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex flex-col">
-                        <span className="text-[7px] mono text-zinc-600 font-black tracking-widest uppercase">LAB_MODULE</span>
-                        <h3 className="text-white font-bold mono text-[13px] tracking-wider">
-                          {platform.name}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-1 bg-zinc-900/60 px-2 py-0.5 rounded border border-zinc-800/50">
-                        <span className="text-[6px] mono text-zinc-500 font-bold uppercase">Level</span>
-                        <span className="text-[6px] mono text-emerald-400 font-bold">{platform.percentile}</span>
-                      </div>
-                    </div>
-
-                    <p className="text-[8px] text-zinc-500 font-medium tracking-[0.05em] leading-tight mt-0.5 uppercase">
-                      {platform.description}
-                    </p>
-
-                    {/* Removed metrics bar; showing only Level */}
-
-                    {/* Hex Footer Deco */}
-                    <div className="absolute bottom-2 right-4 flex gap-1 opacity-20 group-hover:opacity-70 transition-opacity">
-                       <div className="w-1 h-1 bg-emerald-500 rotate-45" />
-                       <div className="w-1 h-1 bg-emerald-500 rotate-45" />
-                       <div className="w-1 h-1 bg-emerald-500 rotate-45" />
-                    </div>
+        {/* Timeline Items */}
+        <div className="flex flex-col gap-4 md:gap-6">
+          {platforms.map((platform, index) => {
+            const isLeft = index % 2 === 0;
+            const isVisible = visibleCards.includes(index);
+            
+            return (
+              <div 
+                key={platform.name} 
+                className={`relative flex items-center ${isLeft ? 'md:flex-row' : 'md:flex-row-reverse'}
+                           transition-all duration-500 ease-out
+                           ${isVisible ? 'opacity-100' : 'opacity-0'}
+                           ${isVisible ? 'translate-y-0' : 'translate-y-4'}
+                           ${isVisible && isLeft ? 'md:translate-x-0' : ''}
+                           ${isVisible && !isLeft ? 'md:translate-x-0' : ''}
+                           ${!isVisible && isLeft ? 'md:-translate-x-8' : ''}
+                           ${!isVisible && !isLeft ? 'md:translate-x-8' : ''}`}
+              >
+                {/* Timeline Node */}
+                <div className={`absolute left-1/2 -translate-x-1/2 hidden md:flex items-center justify-center z-20
+                                transition-all duration-300 ${isVisible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}>
+                  <div className="w-4 h-4 bg-zinc-950 border-2 border-zinc-700 rounded-full flex items-center justify-center">
+                    <div 
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{ backgroundColor: platform.color, boxShadow: `0 0 10px ${platform.color}` }}
+                    />
                   </div>
                 </div>
+
+                {/* Card Side */}
+                <div className={`w-full md:w-1/2 ${isLeft ? 'md:pr-8' : 'md:pl-8'} px-4`}>
+                  <a
+                    href={platform.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block"
+                  >
+                    <div 
+                      className="relative bg-zinc-950/80 border border-zinc-800 p-3 transition-all duration-300 
+                                 hover:border-opacity-60 hover:bg-zinc-900/60 cursor-pointer overflow-hidden"
+                      style={{ 
+                        borderColor: `${platform.color}20`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = `${platform.color}50`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = `${platform.color}20`;
+                      }}
+                    >
+                      {/* Top Accent Line */}
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-[2px] opacity-60 group-hover:opacity-100 transition-opacity"
+                        style={{ background: `linear-gradient(90deg, transparent, ${platform.color}, transparent)` }}
+                      />
+
+                      {/* Corner Brackets */}
+                      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700 group-hover:border-emerald-500/50 transition-colors" />
+                      <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700 group-hover:border-emerald-500/50 transition-colors" />
+                      <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700 group-hover:border-emerald-500/50 transition-colors" />
+                      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700 group-hover:border-emerald-500/50 transition-colors" />
+
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] mono text-zinc-600 tracking-widest">
+                            0{index + 1}
+                          </span>
+                          <h3 
+                            className="font-bold mono text-sm tracking-wide"
+                            style={{ color: platform.color }}
+                          >
+                            {platform.name}
+                          </h3>
+                        </div>
+                        <div 
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[9px] mono font-bold border"
+                          style={{ 
+                            color: platform.color, 
+                            borderColor: `${platform.color}30`,
+                            backgroundColor: `${platform.color}10`
+                          }}
+                        >
+                          {platform.percentile}
+                        </div>
+                      </div>
+
+                      {/* Stats Row */}
+                      <div className="flex items-center gap-3">
+                        {/* Pwned Count */}
+                        <div className="flex items-center gap-1.5">
+                          <div 
+                            className="w-6 h-6 rounded flex items-center justify-center font-bold mono text-xs"
+                            style={{ 
+                              backgroundColor: `${platform.color}15`,
+                              color: platform.color
+                            }}
+                          >
+                            {platform.pwned}
+                          </div>
+                          <span className="text-[9px] mono text-zinc-600 uppercase">Pwned</span>
+                        </div>
+
+                        {/* Separator */}
+                        <div className="w-px h-3 bg-zinc-800" />
+
+                        {/* Rank */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs mono font-bold text-white">{platform.rank}</span>
+                          <span className="text-[9px] mono text-zinc-600 uppercase">Rank</span>
+                        </div>
+                      </div>
+
+                      {/* Hover Arrow */}
+                      <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg 
+                          className="w-3 h-3" 
+                          style={{ color: platform.color }}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+
+                {/* Empty Space for other side */}
+                <div className="hidden md:block md:w-1/2" />
               </div>
-              <div className="hidden md:block md:w-1/2" />
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
       </div>
 
-      {/* Removed dash animation; kept basic styles minimal for smoothness */}
+      {/* Bottom Label */}
+      <div className="flex items-center justify-center gap-2 mt-10">
+        <div className="w-1 h-1 bg-emerald-500/40 rotate-45" />
+        <span className="text-[9px] mono text-zinc-600 uppercase tracking-widest">
+          Security Training Progress
+        </span>
+        <div className="w-1 h-1 bg-emerald-500/40 rotate-45" />
+      </div>
+
+      {/* Animation Keyframes */}
+      <style>{`
+        @keyframes pulse-down {
+          0% { top: -64px; opacity: 0; }
+          20% { opacity: 1; }
+          80% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 };

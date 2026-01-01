@@ -4,20 +4,23 @@ import Background from './components/Background';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import SystemDashboard from './components/SystemDashboard';
+import CookieConsent from './components/CookieConsent';
+import { AuthProvider, useAuth } from './context/AuthContext';
 const PlatformTimeline = React.lazy(() => import('./components/PlatformTimeline'));
 const WriteupView = React.lazy(() => import('./components/WriteupView'));
 const NewsView = React.lazy(() => import('./components/NewsView'));
 const ToolsView = React.lazy(() => import('./components/ToolsView'));
 const AboutView = React.lazy(() => import('./components/AboutView'));
 
-const App: React.FC = () => {
+// Inner app component that uses auth context
+const AppContent: React.FC = () => {
   const [view, setView] = useState('home');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, isApproved, login } = useAuth();
 
   return (
     <div className="min-h-screen selection:bg-emerald-500 selection:text-black bg-black overflow-x-hidden">
       <Background />
-      <Navbar currentView={view} onNavigate={setView} isLoggedIn={isLoggedIn} onLoginToggle={() => setIsLoggedIn(v => !v)} />
+      <Navbar currentView={view} onNavigate={setView} />
       
       <main className="container mx-auto px-6 pt-32 pb-24 flex min-h-screen items-center justify-center">
         {view === 'home' ? (
@@ -41,7 +44,7 @@ const App: React.FC = () => {
           <div className="w-full flex justify-center">
             {view === 'archives' ? (
               <Suspense fallback={<div className="mono text-[10px] text-zinc-600">Loading archives…</div>}>
-                <WriteupView onBack={() => setView('home')} isLoggedIn={isLoggedIn} onLogin={() => setIsLoggedIn(true)} />
+                <WriteupView onBack={() => setView('home')} isLoggedIn={isLoggedIn} isApproved={isApproved} onLogin={login} />
               </Suspense>
             ) : view === 'news' ? (
               <Suspense fallback={<div className="mono text-[10px] text-zinc-600">Loading news feed…</div>}>
@@ -66,25 +69,19 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Lab Telemetry Footer */}
-      <footer className="fixed bottom-6 left-12 hidden md:block z-40">
-        <div className="flex items-center gap-10 text-[9px] mono text-zinc-600 tracking-[0.3em] uppercase">
-          <div className="flex items-center gap-2 group cursor-crosshair">
-            <span className="w-1 h-1 bg-emerald-500/30 rounded-full group-hover:bg-emerald-500 transition-colors shadow-[0_0_5px_#10b981]" />
-            <span className="group-hover:text-zinc-400 transition-colors">LATENCY: 12ms</span>
-          </div>
-          <div className="flex items-center gap-2 group cursor-crosshair">
-            <span className="w-1 h-1 bg-emerald-500/30 rounded-full group-hover:bg-emerald-500 transition-colors shadow-[0_0_5px_#10b981]" />
-            <span className="group-hover:text-zinc-400 transition-colors">ENCRYPTED: AES-256</span>
-          </div>
-          <div className="flex items-center gap-2 group cursor-crosshair">
-            <span className="w-1 h-1 bg-emerald-500/30 rounded-full group-hover:bg-emerald-500 transition-colors shadow-[0_0_5px_#10b981]" />
-            <span className="group-hover:text-zinc-400 transition-colors">STATUS: NOMINAL</span>
-          </div>
-        </div>
-      </footer>
+      {/* Cookie Consent Banner */}
+      <CookieConsent />
 
     </div>
+  );
+};
+
+// Main App component wrapped with AuthProvider
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

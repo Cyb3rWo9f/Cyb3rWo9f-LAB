@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Github, Mail, Code2, RefreshCw, Twitter, X } from 'lucide-react';
+import { ArrowLeft, Github, Mail, Code2, RefreshCw, Twitter, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { fetchLanguageStats, fetchGitHubStats, getLastSyncTime, formatBytes, LanguageSkill, GitHubStats } from '../services/github';
+import { sendContactMessage } from '../services/emailService';
 
 interface ToolsViewProps {
   onBack: () => void;
@@ -17,6 +18,8 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactForm, setContactForm] = useState({ identifier: '', subject: '', payload: '' });
   const [sending, setSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const loadGitHubData = async (forceRefresh = false) => {
     try {
@@ -52,27 +55,40 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
   }, []);
 
   return (
-    <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-700">
+    <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-700 px-3 sm:px-4 lg:px-0">
       {/* Header */}
-      <div className="mb-12 md:mb-16 border-b border-emerald-500/20 pb-8 md:pb-12">
+      <div className="mb-8 md:mb-12 border-b border-zinc-900 pb-6 md:pb-8">
         <button
           onClick={onBack}
-          className="group flex items-center gap-3 text-zinc-500 hover:text-emerald-400 transition-colors mb-8 md:mb-10 mono text-xs uppercase tracking-wider"
+          className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors mb-6 md:mb-8 mono text-[9px] sm:text-xs uppercase tracking-wider"
         >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft size={14} className="sm:hidden group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft size={16} className="hidden sm:block group-hover:-translate-x-1 transition-transform" />
           Back to Home
         </button>
 
-        <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter">
-            Cyb3rWo9f
-          </h1>
-          <p className="text-zinc-400 text-base md:text-lg max-w-4xl leading-relaxed">
-            <span className="text-emerald-400">/ˈsaɪbər ˈwʊlf/</span> • <span className="text-emerald-400">v0ids3ek3r</span>
-          </p>
-          <p className="text-zinc-500 text-sm md:text-base max-w-4xl leading-relaxed">
-            A curious mind deeply invested in chess, Linux (KDE gang), and the intricate world of computer systems—from programming and networking to security research and ethical hacking. Philosophy and systems thinking guide my approach to solving problems. I've grown quieter about myself over the years, but these passions remain constant. My DMs are always open; if you want to discuss ideas, collaborate on projects, or just chat about any of these topics, I'd love to hear from you.
-          </p>
+        <div className="relative">
+          {/* Corner brackets */}
+          <div className="absolute -top-2 -left-2 w-8 h-8 border-t-2 border-l-2 border-emerald-500/30" />
+          <div className="absolute -top-2 -right-2 w-8 h-8 border-t-2 border-r-2 border-emerald-500/30" />
+          
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="text-emerald-500/40 text-3xl md:text-5xl font-light select-none">[</span>
+              <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-300 to-violet-400 tracking-tighter pt-1">
+                Cyb3rWo9f
+              </h1>
+              <span className="text-violet-500/40 text-3xl md:text-5xl font-light select-none">]</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm md:text-base">
+              <span className="px-2 py-1 border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 mono text-xs rounded">/ˈsaɪbər ˈwʊlf/</span>
+              <span className="w-1 h-1 bg-zinc-700 rounded-full" />
+              <span className="px-2 py-1 border border-violet-500/30 bg-violet-500/5 text-violet-300 mono text-xs rounded font-bold">v0ids3ek3r</span>
+            </div>
+            <p className="text-zinc-400 text-sm md:text-base max-w-4xl leading-relaxed border-l-2 border-emerald-500/20 pl-4">
+              A curious mind deeply invested in chess, Linux (KDE gang), and the intricate world of computer systems—from programming and networking to security research and ethical hacking. Philosophy and systems thinking guide my approach to solving problems.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -81,58 +97,67 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
         {/* Left Column - Profile & Contact */}
         <div className="lg:col-span-1 space-y-6">
           {/* Profile Card */}
-          <div className="group border border-emerald-500/20 bg-gradient-to-br from-zinc-950/80 to-zinc-950/40 rounded-lg p-8 hover:border-emerald-500/40 transition-all duration-300">
-            <div className="relative w-32 h-32 mx-auto mb-6">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 to-emerald-600/30 rounded-lg blur-xl group-hover:blur-2xl transition-all" />
+          <div className="group relative border border-zinc-800 bg-zinc-950/90 rounded-sm p-6 hover:border-emerald-500/30 transition-all duration-300">
+            {/* Corner brackets */}
+            <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-emerald-500/40" />
+            <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-emerald-500/40" />
+            <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-emerald-500/40" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-emerald-500/40" />
+            
+            <div className="relative w-24 h-24 mx-auto mb-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-violet-500/20 rounded blur-md group-hover:blur-lg transition-all" />
               <img 
                 src="/images/voidseeker.gif" 
                 alt="Cyb3rWo9f" 
-                className="relative w-32 h-32 rounded-lg object-cover border border-emerald-500/30"
+                className="relative w-24 h-24 rounded object-cover border-2 border-emerald-500/40"
               />
             </div>
-            <h2 className="text-2xl font-bold text-white text-center mb-2">Cyb3rWo9f</h2>
-            <p className="text-emerald-400 mono text-xs text-center uppercase tracking-[0.2em] mb-6 font-semibold">
+            <h2 className="text-xl font-black text-white text-center mb-1.5">Cyb3rWo9f</h2>
+            <p className="text-emerald-400 mono text-[10px] text-center uppercase tracking-[0.15em] mb-4 font-bold">
               v0ids3ek3r
             </p>
-            <div className="w-12 h-1 bg-gradient-to-r from-emerald-500 to-transparent mx-auto mb-6" />
-            <p className="text-zinc-400 text-sm text-center leading-relaxed">
+            <div className="w-12 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent mx-auto mb-4" />
+            <p className="text-zinc-400 text-xs text-center leading-relaxed">
               Chess player, systems thinker, eternal student of technology and philosophy.
             </p>
           </div>
 
           {/* Contact Links */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <a
               href="https://github.com/Cyb3rWo9f"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 border border-emerald-500/20 rounded-lg bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
+              className="flex items-center gap-2.5 px-3 py-2.5 border border-zinc-800 rounded-sm bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
             >
-              <Github size={16} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
-              <span className="mono text-xs uppercase tracking-widest">github.com/Cyb3rWo9f</span>
+              <Github size={14} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
+              <span className="mono text-[10px] uppercase tracking-wider flex-1">github</span>
             </a>
             <a
               href="https://x.com/Cyb3rWo9f"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-3 border border-emerald-500/20 rounded-lg bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
+              className="flex items-center gap-2.5 px-3 py-2.5 border border-zinc-800 rounded-sm bg-zinc-950/50 text-zinc-400 hover:text-violet-400 hover:border-violet-500/50 transition-all duration-300 group/link"
             >
-              <Twitter size={16} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
-              <span className="mono text-xs uppercase tracking-widest">x.com/Cyb3rWo9f</span>
+              <Twitter size={14} className="text-violet-500 group-hover/link:scale-110 transition-transform" />
+              <span className="mono text-[10px] uppercase tracking-wider flex-1">twitter/x</span>
             </a>
             <button
               onClick={() => setShowContactModal(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-500/20 rounded-lg bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 border border-zinc-800 rounded-sm bg-zinc-950/50 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 transition-all duration-300 group/link"
             >
-              <Mail size={16} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
-              <span className="mono text-xs uppercase tracking-widest">message</span>
+              <Mail size={14} className="text-emerald-500 group-hover/link:scale-110 transition-transform" />
+              <span className="mono text-[10px] uppercase tracking-wider flex-1">message</span>
             </button>
           </div>
 
           {/* Stats Card */}
-          <div className="border border-emerald-500/20 bg-gradient-to-br from-zinc-950/80 to-zinc-950/40 rounded-lg p-6 hover:border-emerald-500/40 transition-all duration-300">
-            <h3 className="text-xs font-bold text-emerald-400 mb-6 uppercase tracking-[0.2em]">GitHub Metrics</h3>
-            <div className="space-y-5">
+          <div className="border border-zinc-800 bg-zinc-950/90 rounded-sm p-5 hover:border-emerald-500/30 transition-all duration-300">
+            <h3 className="text-[10px] font-bold text-emerald-400 mb-5 uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              GitHub Metrics
+            </h3>
+            <div className="space-y-4">
               {githubStats ? [
                 { label: 'Public Repos', value: githubStats.publicRepos.toString(), stat: `${Math.min(100, githubStats.publicRepos * 4)}%` },
                 { label: 'Followers', value: githubStats.followers.toString(), stat: `${Math.min(100, githubStats.followers * 2)}%` },
@@ -159,11 +184,17 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
 
         {/* Right Column - Skills */}
         <div className="lg:col-span-2">
-          <div className="border border-emerald-500/20 bg-gradient-to-br from-zinc-950/80 to-zinc-950/40 rounded-lg p-8 hover:border-emerald-500/40 transition-all duration-300">
-            <div className="flex items-center justify-between mb-8">
+          <div className="relative border border-zinc-800 bg-zinc-950/90 rounded-sm p-6 md:p-8 hover:border-emerald-500/30 transition-all duration-300">
+            {/* Corner brackets */}
+            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-emerald-500/40" />
+            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-emerald-500/40" />
+            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-emerald-500/40" />
+            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-emerald-500/40" />
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
               <div className="flex items-center gap-3">
-                <Code2 size={20} className="text-emerald-500" />
-                <h3 className="text-lg font-bold text-white uppercase tracking-[0.15em]">Programming Languages</h3>
+                <Code2 size={18} className="text-emerald-500" />
+                <h3 className="text-base font-bold text-white uppercase tracking-[0.12em]">Programming Languages</h3>
               </div>
               <button
                 onClick={() => loadGitHubData(true)}
@@ -256,81 +287,130 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
           onClick={() => setShowContactModal(false)}
         >
           <div 
-            className="bg-zinc-950 border border-zinc-800 rounded-lg p-6 md:p-8 max-w-lg w-full animate-in zoom-in-95 duration-300"
+            className="relative bg-zinc-950 border border-emerald-500/30 rounded-sm p-6 md:p-8 max-w-lg w-full animate-in zoom-in-95 duration-300 shadow-lg shadow-emerald-500/5"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Corner brackets */}
+            <div className="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-emerald-500" />
+            <div className="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-emerald-500" />
+            <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-emerald-500" />
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-emerald-500" />
+            
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">
-                  Send Message
-                </h2>
-                <p className="text-zinc-500 text-xs mono mt-1">// secure_transmission</p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-500/50 text-2xl font-light select-none">[</span>
+                  <h2 className="text-xl font-black text-white tracking-tight">
+                    Send Message
+                  </h2>
+                  <span className="text-violet-500/50 text-2xl font-light select-none">]</span>
+                </div>
               </div>
               <button
                 onClick={() => setShowContactModal(false)}
-                className="text-zinc-600 hover:text-zinc-400 transition-colors p-1 hover:bg-zinc-800 rounded"
+                className="text-zinc-600 hover:text-emerald-400 transition-colors p-1.5 hover:bg-zinc-900 rounded border border-transparent hover:border-emerald-500/30"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
+            </div>
+            <div className="flex items-center gap-2 mb-6 pb-6 border-b border-zinc-800">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <p className="text-zinc-500 text-[10px] mono uppercase tracking-wider">secure_transmission</p>
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 setSending(true);
-                // Simulate sending
-                setTimeout(() => {
+                setSendError(null);
+                setSendSuccess(false);
+                
+                try {
+                  const result = await sendContactMessage(
+                    contactForm.identifier,
+                    contactForm.subject,
+                    contactForm.payload
+                  );
+
+                  if (result.success) {
+                    setSendSuccess(true);
+                    setContactForm({ identifier: '', subject: '', payload: '' });
+                    
+                    // Close modal after showing success
+                    setTimeout(() => {
+                      setShowContactModal(false);
+                      setSendSuccess(false);
+                    }, 2000);
+                  } else {
+                    setSendError(result.error || 'Failed to send message');
+                  }
+                } catch (error) {
+                  setSendError('An unexpected error occurred. Please try again.');
+                } finally {
                   setSending(false);
-                  setShowContactModal(false);
-                  setContactForm({ identifier: '', subject: '', payload: '' });
-                  alert('Message sent successfully!');
-                }, 1500);
+                }
               }}
               className="space-y-5"
             >
+              {/* Success Message */}
+              {sendSuccess && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 rounded-sm text-emerald-400 text-sm mono animate-in fade-in duration-200">
+                  <CheckCircle2 size={16} />
+                  <span>Message sent successfully!</span>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {sendError && (
+                <div className="flex items-start gap-2 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-sm text-red-400 text-xs mono animate-in fade-in duration-200">
+                  <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                  <span>{sendError}</span>
+                </div>
+              )}
+
               {/* Identifier */}
               <div className="space-y-2">
-                <label className="text-[11px] text-zinc-500 mono uppercase tracking-wider">
-                  Name
+                <label className="text-[10px] text-emerald-400 mono uppercase tracking-[0.15em] font-bold flex items-center gap-2">
+                  <span className="text-emerald-500">&gt;</span> Name
                 </label>
                 <input
                   type="text"
                   required
                   value={contactForm.identifier}
                   onChange={(e) => setContactForm({ ...contactForm, identifier: e.target.value })}
-                  placeholder="Your name"
-                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-3 text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors text-sm"
+                  placeholder="cyb3r_user"
+                  className="w-full bg-zinc-900/80 border border-zinc-800 rounded-sm px-4 py-2.5 text-zinc-200 placeholder-zinc-600 focus:border-emerald-500/50 focus:bg-zinc-900 focus:outline-none transition-all text-sm mono"
                 />
               </div>
 
               {/* Subject */}
               <div className="space-y-2">
-                <label className="text-[11px] text-zinc-500 mono uppercase tracking-wider">
-                  Subject
+                <label className="text-[10px] text-emerald-400 mono uppercase tracking-[0.15em] font-bold flex items-center gap-2">
+                  <span className="text-emerald-500">&gt;</span> Subject
                 </label>
                 <input
                   type="text"
                   required
                   value={contactForm.subject}
                   onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                  placeholder="What's this about?"
-                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-3 text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors text-sm"
+                  placeholder="topic_of_discussion"
+                  className="w-full bg-zinc-900/80 border border-zinc-800 rounded-sm px-4 py-2.5 text-zinc-200 placeholder-zinc-600 focus:border-emerald-500/50 focus:bg-zinc-900 focus:outline-none transition-all text-sm mono"
                 />
               </div>
 
               {/* Payload */}
               <div className="space-y-2">
-                <label className="text-[11px] text-zinc-500 mono uppercase tracking-wider">
-                  Message
+                <label className="text-[10px] text-emerald-400 mono uppercase tracking-[0.15em] font-bold flex items-center gap-2">
+                  <span className="text-emerald-500">&gt;</span> Message
                 </label>
                 <textarea
                   required
                   value={contactForm.payload}
                   onChange={(e) => setContactForm({ ...contactForm, payload: e.target.value })}
-                  placeholder="Write your message..."
+                  placeholder="# Enter your message here...\n# Be specific and clear"
                   rows={5}
-                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md px-4 py-3 text-zinc-200 placeholder-zinc-600 focus:border-zinc-600 focus:outline-none transition-colors text-sm resize-none"
+                  className="w-full bg-zinc-900/80 border border-zinc-800 rounded-sm px-4 py-2.5 text-zinc-200 placeholder-zinc-600 focus:border-emerald-500/50 focus:bg-zinc-900 focus:outline-none transition-all text-sm resize-none mono leading-relaxed"
                 />
               </div>
 
@@ -338,15 +418,29 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-md transition-colors duration-200 text-sm uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-sm transition-all duration-200 text-xs uppercase tracking-[0.15em] disabled:opacity-50 disabled:cursor-not-allowed mt-2 border border-emerald-500/50 mono flex items-center justify-center gap-2"
               >
-                {sending ? 'Sending...' : 'Send Message'}
+                {sending ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Transmitting...
+                  </>
+                ) : (
+                  <>
+                    <Mail size={14} />
+                    Send Message
+                  </>
+                )}
               </button>
             </form>
 
-            <p className="text-[10px] text-zinc-600 mono text-center mt-6">
-              Messages are end-to-end encrypted
-            </p>
+            <div className="mt-6 pt-6 border-t border-zinc-800 flex items-center justify-center gap-2">
+              <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+              <p className="text-[9px] text-zinc-600 mono uppercase tracking-wider">
+                secure_encrypted_channel
+              </p>
+              <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+            </div>
           </div>
         </div>
       )}

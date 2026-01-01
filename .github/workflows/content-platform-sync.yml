@@ -1,0 +1,61 @@
+name: Cyberlab Content & Platform Sync
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm install node-appwrite xml2js
+      
+      - name: Run unified sync
+        env:
+          # ═══════════════════════════════════════════════════════════
+          # APPWRITE CONFIGURATION (Required)
+          # ═══════════════════════════════════════════════════════════
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          APPWRITE_DATABASE_ID: ${{ secrets.APPWRITE_DATABASE_ID }}
+          APPWRITE_COLLECTION_ID: ${{ secrets.APPWRITE_COLLECTION_ID }}
+          APPWRITE_PLATFORM_COLLECTION_ID: ${{ secrets.APPWRITE_PLATFORM_COLLECTION_ID }}
+          
+          # ═══════════════════════════════════════════════════════════
+          # RSS NEWS FEED
+          # ═══════════════════════════════════════════════════════════
+          RSS_FEED_URL: ${{ secrets.RSS_FEED_URL }}
+          
+          # ═══════════════════════════════════════════════════════════
+          # TRYHACKME (Required: THM_USERNAME)
+          # ═══════════════════════════════════════════════════════════
+          THM_USERNAME: ${{ secrets.THM_USERNAME }}
+          THM_TOTAL_USERS: 3000000
+          
+          # ═══════════════════════════════════════════════════════════
+          # HACKTHEBOX (Optional: requires HTB_API_TOKEN)
+          # ═══════════════════════════════════════════════════════════
+          HTB_USERNAME: ${{ secrets.HTB_USERNAME }}
+          HTB_API_TOKEN: ${{ secrets.HTB_API_TOKEN }}
+          
+          # ═══════════════════════════════════════════════════════════
+          # OFFSEC PG (Optional: manual stats - no public API)
+          # ═══════════════════════════════════════════════════════════
+          OFFSEC_USERNAME: ${{ secrets.OFFSEC_USERNAME }}
+          OFFSEC_RANK: ${{ secrets.OFFSEC_RANK }}
+          OFFSEC_PWNED: ${{ secrets.OFFSEC_PWNED }}
+          OFFSEC_PERCENTILE: ${{ secrets.OFFSEC_PERCENTILE }}
+        run: node scripts/sync-all.js
