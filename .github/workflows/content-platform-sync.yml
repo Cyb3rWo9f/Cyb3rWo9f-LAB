@@ -47,8 +47,10 @@ jobs:
           
           # ═══════════════════════════════════════════════════════════
           # HACKTHEBOX (Optional: requires HTB_API_TOKEN)
+          # Use HTB_USER_ID (numeric ID like 2238318) for best results
           # ═══════════════════════════════════════════════════════════
           HTB_USERNAME: ${{ secrets.HTB_USERNAME }}
+          HTB_USER_ID: ${{ secrets.HTB_USER_ID }}
           HTB_API_TOKEN: ${{ secrets.HTB_API_TOKEN }}
           
           # ═══════════════════════════════════════════════════════════

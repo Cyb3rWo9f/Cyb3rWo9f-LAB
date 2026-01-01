@@ -37,6 +37,7 @@ const config = {
     },
     hackthebox: {
       username: process.env.HTB_USERNAME || '',
+      userId: process.env.HTB_USER_ID || '', // Numeric user ID (e.g., 2238318)
       apiToken: process.env.HTB_API_TOKEN || '',
     },
     offsec: {
@@ -273,9 +274,11 @@ async function syncTryHackMe() {
 // ═══════════════════════════════════════════════════════════════
 
 async function syncHackTheBox() {
-  const { username, apiToken } = config.platforms.hackthebox;
-  if (!username) {
-    log('HTB', 'No HTB username provided - skipping (set HTB_USERNAME secret)', 'warn');
+  const { username, userId, apiToken } = config.platforms.hackthebox;
+  
+  // HTB requires either username or userId
+  if (!username && !userId) {
+    log('HTB', 'No HTB username/userId provided - skipping (set HTB_USERNAME or HTB_USER_ID)', 'warn');
     return { success: false, skipped: true };
   }
   if (!apiToken) {
@@ -283,48 +286,95 @@ async function syncHackTheBox() {
     return { success: false, skipped: true };
   }
 
-  log('HTB', `Fetching stats for ${username}...`);
+  const identifier = userId || username;
+  log('HTB', `Fetching stats for ${identifier}...`);
   
   try {
-    // HTB API - try multiple endpoints
-    let info = null;
-    const endpoints = [
-      'https://www.hackthebox.com/api/v4/profile/activity',
-      'https://labs.hackthebox.com/api/v4/user/info',
-      'https://app.hackthebox.com/api/v4/profile',
-    ];
+    // HTB API v4 - primary endpoint for user profile
+    // If we have a userId, use the profile endpoint directly
+    const profileUrl = userId 
+      ? `https://labs.hackthebox.com/api/v4/profile/${userId}`
+      : `https://labs.hackthebox.com/api/v4/user/info`;
+    
+    const headers = {
+      Authorization: `Bearer ${apiToken}`,
+      Accept: 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; CyberLab/1.0)',
+    };
 
-    for (const endpoint of endpoints) {
-      try {
-        const res = await fetch(endpoint, {
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-            Accept: 'application/json',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          info = data.profile || data.info || data.data || data;
-          log('HTB', `Found working endpoint: ${endpoint}`, 'info');
-          break;
+    let info = null;
+    let usedEndpoint = '';
+
+    // Try primary endpoint first
+    try {
+      const res = await fetch(profileUrl, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        // HTB API returns { profile: {...} } or { info: {...} } or direct object
+        info = data.profile || data.info || data.data || data;
+        usedEndpoint = profileUrl;
+        log('HTB', `API response keys: ${Object.keys(info).join(', ')}`, 'info');
+      } else {
+        log('HTB', `Primary endpoint failed: HTTP ${res.status}`, 'warn');
+      }
+    } catch (e) {
+      log('HTB', `Primary endpoint error: ${e.message}`, 'warn');
+    }
+
+    // Fallback endpoints if primary failed
+    if (!info) {
+      const fallbackEndpoints = [
+        'https://www.hackthebox.com/api/v4/profile/info',
+        'https://app.hackthebox.com/api/v4/profile',
+        'https://labs.hackthebox.com/api/v4/user/info',
+      ];
+
+      for (const endpoint of fallbackEndpoints) {
+        try {
+          const res = await fetch(endpoint, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            info = data.profile || data.info || data.data || data;
+            usedEndpoint = endpoint;
+            log('HTB', `Fallback endpoint worked: ${endpoint}`, 'info');
+            break;
+          }
+        } catch (e) {
+          // Try next endpoint
         }
-      } catch (e) {
-        // Try next endpoint
       }
     }
 
     if (!info) {
-      throw new Error('All HTB API endpoints returned errors - check your API token');
+      throw new Error('All HTB API endpoints failed - check your API token');
     }
 
-    const rank = info.ranking || info.rank || info.global_ranking || 0;
-    const pwned = (info.user_owns || 0) + (info.system_owns || 0) + (info.user_bloods || 0) + (info.system_bloods || 0);
-    const points = info.points || 0;
-    const tier = info.rank_name || info.rank || info.current_rank || 'Noob';
+    log('HTB', `Using endpoint: ${usedEndpoint}`, 'info');
+
+    // Parse HTB response - handle different API response structures
+    // Common fields across different HTB API versions
+    const rank = Number(info.ranking || info.rank || info.global_ranking || info.current_rank_position || 0);
+    
+    // Pwned machines count - try multiple possible field names
+    const userOwns = Number(info.user_owns || info.user_owns_count || 0);
+    const systemOwns = Number(info.system_owns || info.system_owns_count || 0);
+    const challengeOwns = Number(info.challenge_owns || info.challenges_owned || 0);
+    const pwned = userOwns + systemOwns + challengeOwns;
+    
+    const points = Number(info.points || info.score || 0);
+    
+    // Rank tier name - HTB uses names like "Hacker", "Pro Hacker", "Elite Hacker", etc.
+    const tier = info.rank || info.rank_name || info.current_rank || info.rankName || 'Noob';
+    
+    // Username from response or fallback
+    const htbUsername = info.name || info.username || info.user_name || username || 'Unknown';
+    
+    // User ID for profile URL
+    const htbUserId = info.id || info.user_id || userId || '';
 
     const payload = {
       platform: 'hackthebox',
-      username: info.name || username,
+      username: htbUsername,
       rank,
       pwned,
       percentile: tier, // HTB uses tier names instead of percentile
@@ -332,13 +382,13 @@ async function syncHackTheBox() {
       points,
       badges: [],
       badgeCount: 0,
-      profileUrl: `https://app.hackthebox.com/profile/${info.id || username}`,
+      profileUrl: htbUserId ? `https://app.hackthebox.com/profile/${htbUserId}` : `https://app.hackthebox.com/users/${htbUsername}`,
       updatedAt: new Date().toISOString(),
     };
 
     const status = await upsertPlatformDoc('hackthebox', payload);
-    log('HTB', `${status}: rank=#${rank}, pwned=${pwned}, tier=${tier}`, 'success');
-    return { success: true, rank, pwned };
+    log('HTB', `${status}: rank=#${rank}, pwned=${pwned}, points=${points}, tier=${tier}`, 'success');
+    return { success: true, rank, pwned, points };
     
   } catch (err) {
     log('HTB', `Failed: ${err.message}`, 'error');
