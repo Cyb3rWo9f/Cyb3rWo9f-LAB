@@ -286,19 +286,19 @@ async function syncHackTheBox() {
   log('HTB', `Fetching stats for ${username}...`);
   
   try {
-    // HTB API v4 requires Bearer token
-    const profileRes = await fetchJson('https://www.hackthebox.com/api/v4/profile/info', {
+    // HTB API v4 - use labs API endpoint
+    const profileRes = await fetchJson('https://labs.hackthebox.com/api/v4/profile', {
       headers: {
         Authorization: `Bearer ${apiToken}`,
         Accept: 'application/json',
       },
     });
 
-    const info = profileRes.info || profileRes;
-    const rank = info.ranking || 0;
-    const pwned = (info.user_owns || 0) + (info.system_owns || 0);
+    const info = profileRes.profile || profileRes.info || profileRes;
+    const rank = info.ranking || info.rank || 0;
+    const pwned = (info.user_owns || 0) + (info.system_owns || 0) + (info.user_bloods || 0) + (info.system_bloods || 0);
     const points = info.points || 0;
-    const tier = info.rank || 'Noob';
+    const tier = info.rank_name || info.rank || 'Noob';
 
     const payload = {
       platform: 'hackthebox',
