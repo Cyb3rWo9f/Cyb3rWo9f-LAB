@@ -1,5 +1,6 @@
 
 import React, { useState, Suspense } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import Background from './components/Background';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -73,6 +74,8 @@ const AppContent: React.FC = () => {
       {/* Cookie Consent Banner */}
       <CookieConsent />
 
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 };
