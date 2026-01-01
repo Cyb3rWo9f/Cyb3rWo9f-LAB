@@ -6,6 +6,7 @@ import Hero from './components/Hero';
 import SystemDashboard from './components/SystemDashboard';
 import CookieConsent from './components/CookieConsent';
 import { AuthProvider } from './context/AuthContext';
+import { useSpeedInsights } from './hooks/useSpeedInsights';
 const PlatformTimeline = React.lazy(() => import('./components/PlatformTimeline'));
 const WriteupView = React.lazy(() => import('./components/WriteupView'));
 const NewsView = React.lazy(() => import('./components/NewsView'));
@@ -15,6 +16,7 @@ const AboutView = React.lazy(() => import('./components/AboutView'));
 // Inner app component that uses auth context
 const AppContent: React.FC = () => {
   const [view, setView] = useState('home');
+  useSpeedInsights();
 
   return (
     <div className="min-h-screen selection:bg-emerald-500 selection:text-black bg-black overflow-x-hidden">
