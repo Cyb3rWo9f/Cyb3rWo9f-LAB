@@ -286,19 +286,41 @@ async function syncHackTheBox() {
   log('HTB', `Fetching stats for ${username}...`);
   
   try {
-    // HTB API v4 - use labs API endpoint
-    const profileRes = await fetchJson('https://labs.hackthebox.com/api/v4/profile', {
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        Accept: 'application/json',
-      },
-    });
+    // HTB API - try multiple endpoints
+    let info = null;
+    const endpoints = [
+      'https://www.hackthebox.com/api/v4/profile/activity',
+      'https://labs.hackthebox.com/api/v4/user/info',
+      'https://app.hackthebox.com/api/v4/profile',
+    ];
 
-    const info = profileRes.profile || profileRes.info || profileRes;
-    const rank = info.ranking || info.rank || 0;
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            Accept: 'application/json',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          info = data.profile || data.info || data.data || data;
+          log('HTB', `Found working endpoint: ${endpoint}`, 'info');
+          break;
+        }
+      } catch (e) {
+        // Try next endpoint
+      }
+    }
+
+    if (!info) {
+      throw new Error('All HTB API endpoints returned errors - check your API token');
+    }
+
+    const rank = info.ranking || info.rank || info.global_ranking || 0;
     const pwned = (info.user_owns || 0) + (info.system_owns || 0) + (info.user_bloods || 0) + (info.system_bloods || 0);
     const points = info.points || 0;
-    const tier = info.rank_name || info.rank || 'Noob';
+    const tier = info.rank_name || info.rank || info.current_rank || 'Noob';
 
     const payload = {
       platform: 'hackthebox',
