@@ -205,23 +205,21 @@ async function syncRSS() {
           await databases.updateDocument(dbId, collId, docId, data);
           updated++;
         } catch (updateErr) {
-          if (updateErr.code === 404) {
-            // Document doesn't exist, create it
+          // Document doesn't exist - create it
+          if (updateErr.code === 404 || updateErr.message?.includes('not be found')) {
             await databases.createDocument(dbId, collId, docId, data);
             created++;
-          } else if (updateErr.code === 409) {
-            // Conflict - document exists but update failed, skip
-            updated++;
           } else {
-            // Try create as fallback
+            // Update failed for another reason - try to create
             try {
               await databases.createDocument(dbId, collId, docId, data);
               created++;
             } catch (createErr) {
-              if (createErr.code === 409) {
-                // Already exists - that's fine, count as updated
+              // If doc already exists, that's fine - count as updated
+              if (createErr.code === 409 || createErr.message?.includes('already exists')) {
                 updated++;
               } else {
+                // Real error - throw it
                 throw createErr;
               }
             }
