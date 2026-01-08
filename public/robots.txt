@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://cyb3rwo9f.me/sitemap.xml
+
+# Disallow private or dynamic routes
+Disallow: /api/
+Disallow: /_vercel/
