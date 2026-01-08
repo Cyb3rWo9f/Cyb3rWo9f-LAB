@@ -291,3 +291,55 @@ export function getLastSyncTime(): string {
   }
   return 'not synced';
 }
+
+/**
+ * Featured Project interface
+ */
+export interface FeaturedProject {
+  name: string;
+  description: string;
+  url: string;
+  language: string;
+  stars: number;
+  forks: number;
+  topics: string[];
+}
+
+/**
+ * Fetch featured/pinned projects
+ */
+export async function fetchFeaturedProjects(): Promise<FeaturedProject[]> {
+  try {
+    console.log(`Fetching repositories for featured projects...`);
+    
+    const response = await fetch(
+      `${GITHUB_API_BASE}/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`
+    );
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    const repos = await response.json();
+    
+    // Get top projects by stars, not forked, with descriptions
+    const featuredRepos = repos
+      .filter((repo: any) => !repo.fork && repo.description && !repo.private)
+      .sort((a: any, b: any) => b.stargazers_count - a.stargazers_count)
+      .slice(0, 6)
+      .map((repo: any) => ({
+        name: repo.name,
+        description: repo.description || 'No description available',
+        url: repo.html_url,
+        language: repo.language || 'Unknown',
+        stars: repo.stargazers_count || 0,
+        forks: repo.forks_count || 0,
+        topics: repo.topics || [],
+      }));
+
+    return featuredRepos;
+  } catch (error) {
+    console.error('Error fetching featured projects:', error);
+    return [];
+  }
+}

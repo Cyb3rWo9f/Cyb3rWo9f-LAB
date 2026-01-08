@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Github, Mail, Code2, RefreshCw, Twitter, X, CheckCircle2, AlertCircle } from 'lucide-react';
-import { fetchLanguageStats, fetchGitHubStats, getLastSyncTime, formatBytes, LanguageSkill, GitHubStats } from '../services/github';
+import { ArrowLeft, Github, Mail, Code2, RefreshCw, Twitter, X, CheckCircle2, AlertCircle, BookOpen, Star, GitFork, ExternalLink, FolderGit2 } from 'lucide-react';
+import { fetchLanguageStats, fetchGitHubStats, fetchFeaturedProjects, getLastSyncTime, formatBytes, LanguageSkill, GitHubStats, FeaturedProject } from '../services/github';
 import { sendContactMessage } from '../services/emailService';
+import { fetchJournalingStats, JournalingStats } from '../services/journaling';
 
 interface ToolsViewProps {
   onBack: () => void;
@@ -10,6 +11,8 @@ interface ToolsViewProps {
 const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
   const [skills, setSkills] = useState<LanguageSkill[]>([]);
   const [githubStats, setGithubStats] = useState<GitHubStats | null>(null);
+  const [journalingStats, setJournalingStats] = useState<JournalingStats | null>(null);
+  const [projects, setProjects] = useState<FeaturedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<string>('');
@@ -31,15 +34,19 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
       setError(null);
 
       // Fetch both stats and language data in parallel
-      const [langData, statsData] = await Promise.all([
+      const [langData, statsData, journalData, projectsData] = await Promise.all([
         fetchLanguageStats(),
         fetchGitHubStats(),
+        fetchJournalingStats(),
+        fetchFeaturedProjects(),
       ]);
 
       if (langData.length > 0) {
         setSkills(langData);
       }
       setGithubStats(statsData);
+      setJournalingStats(journalData);
+      setProjects(projectsData);
       setLastSync(getLastSyncTime());
     } catch (err) {
       console.error('Failed to load GitHub data:', err);
@@ -57,7 +64,7 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
   return (
     <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-700 px-3 sm:px-4 lg:px-0">
       {/* Header */}
-      <div className="mb-8 md:mb-12 border-b border-zinc-900 pb-6 md:pb-8">
+      <div className="mb-6 md:mb-8 border-b border-zinc-900 pb-6 md:pb-8">
         <button
           onClick={onBack}
           className="group flex items-center gap-2 text-zinc-500 hover:text-emerald-400 transition-colors mb-6 md:mb-8 mono text-[9px] sm:text-xs uppercase tracking-wider"
@@ -93,7 +100,7 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-16">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-8">
         {/* Left Column - Profile & Contact */}
         <div className="lg:col-span-1 space-y-6">
           {/* Profile Card */}
@@ -179,6 +186,37 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                 <div className="text-zinc-600 text-sm mono">Loading stats...</div>
               )}
             </div>
+          </div>
+
+          {/* Journaling.tech Stats Card */}
+          <div className="border border-zinc-800 bg-zinc-950/90 rounded-sm p-5 hover:border-violet-500/30 transition-all duration-300">
+            <h3 className="text-[10px] font-bold text-violet-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-pulse" />
+              Journaling.tech Stats
+            </h3>
+            <div className="space-y-3">
+              {journalingStats ? [
+                { label: 'Entries', value: journalingStats.totalEntries.toString() },
+                { label: 'Current', value: journalingStats.currentStreak.toString() },
+                { label: 'Best', value: journalingStats.bestStreak.toString() },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-400 uppercase tracking-wider">{item.label}</span>
+                  <span className="text-sm font-bold text-violet-400">{item.value}</span>
+                </div>
+              )) : (
+                <div className="text-zinc-600 text-sm mono">Loading...</div>
+              )}
+            </div>
+            <a 
+              href="https://app.journaling.tech/u/Cyb3rWo9f"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-violet-400 transition-colors"
+            >
+              <BookOpen size={10} />
+              View Profile
+            </a>
           </div>
         </div>
 
@@ -276,6 +314,118 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
                 Proficiency levels are calculated from actual code in public GitHub repositories, measured by bytes of code per language across all non-forked repos. Last synced: <span className="text-emerald-400">{lastSync || 'syncing...'}</span>.
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Projects Section */}
+      <div className="pb-12">
+        <div className="relative border border-zinc-800 bg-zinc-950/90 rounded-sm p-6 md:p-8 hover:border-emerald-500/30 transition-all duration-300">
+          {/* Corner brackets */}
+          <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-emerald-500/40" />
+          <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-emerald-500/40" />
+          <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-emerald-500/40" />
+          <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-emerald-500/40" />
+          
+          <div className="flex items-center gap-3 mb-6">
+            <FolderGit2 size={18} className="text-emerald-500" />
+            <h3 className="text-base font-bold text-white uppercase tracking-[0.12em]">Featured Projects</h3>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="border border-zinc-800 bg-zinc-900/50 rounded p-4 animate-pulse">
+                  <div className="h-4 bg-zinc-800 rounded mb-3 w-3/4" />
+                  <div className="h-3 bg-zinc-800 rounded mb-2 w-full" />
+                  <div className="h-3 bg-zinc-800 rounded mb-4 w-5/6" />
+                  <div className="flex gap-2">
+                    <div className="h-2 bg-zinc-800 rounded w-12" />
+                    <div className="h-2 bg-zinc-800 rounded w-12" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : projects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <a
+                  key={project.name}
+                  href={project.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-emerald-500/50 rounded p-4 transition-all duration-300"
+                >
+                  {/* Corner accents */}
+                  <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500/0 group-hover:border-emerald-500/50 transition-colors" />
+                  <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-emerald-500/0 group-hover:border-emerald-500/50 transition-colors" />
+                  <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-emerald-500/0 group-hover:border-emerald-500/50 transition-colors" />
+                  <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500/0 group-hover:border-emerald-500/50 transition-colors" />
+                  
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors mono flex items-center gap-2">
+                      {project.name}
+                      <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h4>
+                  </div>
+                  
+                  <p className="text-xs text-zinc-400 mb-3 line-clamp-2 leading-relaxed">
+                    {project.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-[10px] text-zinc-500">
+                      {project.language && (
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500/50" />
+                          {project.language}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Star size={10} />
+                        {project.stars}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <GitFork size={10} />
+                        {project.forks}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {project.topics.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-zinc-800">
+                      {project.topics.slice(0, 3).map((topic) => (
+                        <span 
+                          key={topic}
+                          className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] rounded mono"
+                        >
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-zinc-600 mono text-sm">
+              No projects found
+            </div>
+          )}
+
+          <div className="mt-6 pt-6 border-t border-emerald-500/10 flex items-center justify-between">
+            <p className="text-xs text-zinc-500 mono">
+              Showing top repositories by stars
+            </p>
+            <a
+              href={`https://github.com/Cyb3rWo9f?tab=repositories`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors mono"
+            >
+              <Github size={10} />
+              View All
+            </a>
           </div>
         </div>
       </div>

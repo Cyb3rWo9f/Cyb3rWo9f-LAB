@@ -14,6 +14,17 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        minify: 'esbuild',
+        rollupOptions: {
+          output: {
+            manualChunks: undefined,
+          }
+        }
+      },
+      esbuild: {
+        drop: mode === 'production' ? ['console', 'debugger'] : [],
       }
     };
 });
