@@ -17,9 +17,13 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         minify: 'esbuild',
+        chunkSizeWarningLimit: 1000,
         rollupOptions: {
           output: {
-            manualChunks: undefined,
+            manualChunks: {
+              vendor: ['react', 'react-dom'],
+              markdown: ['react-markdown', 'remark-gfm'],
+            }
           }
         }
       },

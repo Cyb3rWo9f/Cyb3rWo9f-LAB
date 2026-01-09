@@ -27,3 +27,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# VM Agent (private - not pushed to GitHub)
+vm-agent/

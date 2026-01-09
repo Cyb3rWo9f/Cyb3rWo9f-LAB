@@ -70,7 +70,7 @@ export interface GitHubStats {
 // Cache to avoid rate limiting
 let languageCache: { data: LanguageSkill[]; timestamp: number } | null = null;
 let statsCache: { data: GitHubStats; timestamp: number } | null = null;
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours - reduce GitHub API calls to avoid rate limiting
 
 /**
  * Fetch user's GitHub profile stats
@@ -86,6 +86,9 @@ export async function fetchGitHubStats(): Promise<GitHubStats> {
     const response = await fetch(`${GITHUB_API_BASE}/users/${GITHUB_USERNAME}`);
     
     if (!response.ok) {
+      // Rate limited or other error
+      console.warn(`GitHub API error: ${response.status}. Using cached values.`);
+      // Return default values - will be overridden by cache if available
       throw new Error(`GitHub API error: ${response.status}`);
     }
 
@@ -104,6 +107,10 @@ export async function fetchGitHubStats(): Promise<GitHubStats> {
     return stats;
   } catch (error) {
     console.error('Failed to fetch GitHub stats:', error);
+    // Return cached data if available, otherwise defaults
+    if (statsCache) {
+      return statsCache.data;
+    }
     // Return default values on error
     return {
       publicRepos: 0,
