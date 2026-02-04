@@ -43,7 +43,6 @@ const LANGUAGE_COLORS: Record<string, string> = {
 const FEATURED_LANGUAGES = [
   'TypeScript',
   'JavaScript',
-  'HTML',
   'Python',
   'Go',
   'Rust',
@@ -51,7 +50,8 @@ const FEATURED_LANGUAGES = [
   'SQL',
   'C++',
   'PowerShell',
-  'CSS',
+  'Ruby',
+  'Lua',
 ];
 
 export interface LanguageSkill {
