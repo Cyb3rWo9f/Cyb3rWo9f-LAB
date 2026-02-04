@@ -252,7 +252,7 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
 
             {loading ? (
               <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
                   <div key={i} className="space-y-2 animate-pulse">
                     <div className="flex justify-between">
                       <div className="h-4 w-20 bg-zinc-800 rounded" />

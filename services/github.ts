@@ -41,15 +41,17 @@ const LANGUAGE_COLORS: Record<string, string> = {
 
 // Featured languages - always visible even if 0%
 const FEATURED_LANGUAGES = [
-  'Python',
-  'TypeScript', 
+  'TypeScript',
   'JavaScript',
+  'HTML',
+  'Python',
   'Go',
   'Rust',
   'Bash',
   'SQL',
   'C++',
   'PowerShell',
+  'CSS',
 ];
 
 export interface LanguageSkill {
