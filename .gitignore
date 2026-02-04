@@ -33,3 +33,10 @@ vm-agent/
 
 # Private writeups (not pushed to GitHub)
 writeups/
+
+# Setup scripts with API keys (local only)
+scripts/setup-appwrite.cjs
+scripts/writeup-cli.cjs
+
+# Local documentation (not pushed)
+docs/

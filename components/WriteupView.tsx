@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, Tag, ChevronLeft, ChevronRight, Loader2, Database, AlertTriangle, Server, Cpu, Flag, Box, Shield, BookOpen, Search, Zap, Lock, FileText, Layers, LogIn } from 'lucide-react';
 import { PLATFORMS_METRICS } from '../constants';
 import { Writeup } from '../types';
-import { loadAllWriteups, loadLockedWriteupContent, WriteupAuthContext } from '../services/writeupLoader';
+import { loadAllWriteups, loadWriteupContent, WriteupAuthContext } from '../services/writeupLoader';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import { useAuth } from '../context/AuthContext';
