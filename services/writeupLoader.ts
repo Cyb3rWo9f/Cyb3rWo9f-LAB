@@ -16,8 +16,8 @@ const LOCKED_CONTENT_PLACEHOLDER = `
 *Content has been redacted for security. Please sign in and get approved to view the full writeup.*
 `;
 
-// Cache for writeup metadata (ID -> file info) to enable on-demand loading
-const writeupFileCache = new Map<string, { fileId: string; fileName: string }>();
+// Cache for writeup file info (ID -> file details) to enable on-demand loading
+const writeupFileCache = new Map<string, { fileId: string; fileName: string; isLocked: boolean }>();
 
 /**
  * Simple Frontmatter Parser
@@ -80,12 +80,19 @@ export const loadAllWriteups = async (authContext?: WriteupAuthContext): Promise
 };
 
 // Load writeups from Appwrite storage
-// SECURITY: Locked content is only included if user is authenticated AND approved
+// SECURITY: Locked writeup content is NEVER fetched for unauthorized users
+// 
+// IMPORTANT: For this to work securely, locked writeups MUST follow this naming convention:
+// - Locked files: [LOCKED]-filename.md  (e.g., "[LOCKED]-web-pentesting-basics.md")
+// - Public files: filename.md (no prefix)
+// 
+// This allows us to identify locked files WITHOUT fetching them, preventing content exposure
 export const loadWriteupsFromStorage = async (authContext?: WriteupAuthContext): Promise<Writeup[]> => {
   const writeups: Writeup[] = [];
   
   // Check if user can access locked content
   const canAccessLocked = authContext?.isAuthenticated && authContext?.isApproved;
+  console.log(`🔐 Auth context: authenticated=${authContext?.isAuthenticated}, approved=${authContext?.isApproved}, canAccessLocked=${canAccessLocked}`);
 
   // First, list all files in the storage bucket
   const files = await listFilesInStorage();
@@ -101,7 +108,50 @@ export const loadWriteupsFromStorage = async (authContext?: WriteupAuthContext):
 
   for (const file of mdFiles) {
     try {
-      // Fetch file content using the file ID
+      // SECURITY CHECK: Determine if file is locked from filename
+      // Locked files use naming convention: [LOCKED]-filename.md or _locked_filename.md
+      const isLockedByName = file.name.startsWith('[LOCKED]-') || 
+                             file.name.startsWith('_locked_') ||
+                             file.name.toLowerCase().includes('.locked.');
+      
+      // If file appears locked by name and user is NOT authorized, skip fetching entirely
+      if (isLockedByName && !canAccessLocked) {
+        console.log(`🔒 SKIPPING fetch for locked file: ${file.name} (user not authorized)`);
+        
+        // Create a placeholder writeup entry without fetching content
+        const cleanName = file.name
+          .replace('[LOCKED]-', '')
+          .replace('_locked_', '')
+          .replace('.locked.', '.')
+          .replace('.md', '');
+        
+        const writeupId = cleanName;
+        
+        // Cache file info for later (when user becomes authorized)
+        writeupFileCache.set(writeupId, { 
+          fileId: file.$id, 
+          fileName: file.name,
+          isLocked: true 
+        });
+        
+        writeups.push({
+          id: writeupId,
+          title: cleanName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          excerpt: 'This content requires authentication and approval to view.',
+          date: '',
+          readingTime: '? MIN',
+          category: 'Protected',
+          tags: ['locked'],
+          content: LOCKED_CONTENT_PLACEHOLDER,
+          platform: undefined,
+          locked: true,
+          hints: undefined
+        });
+        
+        continue; // Skip fetching this file
+      }
+      
+      // File is either not locked OR user is authorized - fetch the content
       const content = await getFileFromStorage(file.$id);
       
       if (!content) {
@@ -111,27 +161,46 @@ export const loadWriteupsFromStorage = async (authContext?: WriteupAuthContext):
 
       const { data, content: markdown } = parseFrontmatter(content);
       
-      // Determine if this writeup is locked
-      const isLocked = data.locked === 'true' || data.locked === true;
+      // Check locked status from frontmatter (for files without naming convention)
+      const isLockedByFrontmatter = data.locked === 'true' || data.locked === true;
+      const isLocked = isLockedByName || isLockedByFrontmatter;
       
-      // Cache the file info for on-demand loading
-      const writeupId = data.id || file.name.replace('.md', '');
-      writeupFileCache.set(writeupId, { fileId: file.$id, fileName: file.name });
+      const writeupId = data.id || file.name
+        .replace('[LOCKED]-', '')
+        .replace('_locked_', '')
+        .replace('.md', '');
       
-      // SECURITY: Strip content for locked writeups if user is not authorized
-      // This prevents content from being exposed in network tab
-      let finalContent = markdown;
-      if (isLocked && !canAccessLocked) {
-        console.log(`🔒 Stripping content for locked writeup: ${file.name} (user not authorized)`);
+      // Cache file info
+      writeupFileCache.set(writeupId, { 
+        fileId: file.$id, 
+        fileName: file.name,
+        isLocked 
+      });
+      
+      // Determine final content
+      let finalContent: string;
+      let readingTime: string;
+      
+      // SECURITY: If locked by frontmatter (but not by name), we already fetched it
+      // For truly secure implementation, ALL locked files should use naming convention
+      if (isLockedByFrontmatter && !isLockedByName && !canAccessLocked) {
+        console.warn(`⚠️ File ${file.name} is locked by frontmatter but NOT by naming convention!`);
+        console.warn(`⚠️ Content was exposed in network. Rename to: [LOCKED]-${file.name}`);
         finalContent = LOCKED_CONTENT_PLACEHOLDER;
+        readingTime = '? MIN';
+      } else {
+        finalContent = markdown;
+        readingTime = calculateReadingTime(markdown);
       }
+      
+      console.log(`✅ Loaded: ${file.name}${isLocked ? ' [LOCKED]' : ''}`);
 
       writeups.push({
         id: writeupId,
         title: data.title || 'Untitled',
         excerpt: data.excerpt || '',
         date: data.date || '',
-        readingTime: calculateReadingTime(markdown), // Use real content for reading time
+        readingTime,
         category: data.category || 'Uncategorized',
         tags: data.tags || [],
         content: finalContent,
@@ -140,7 +209,6 @@ export const loadWriteupsFromStorage = async (authContext?: WriteupAuthContext):
         hints: Array.isArray(data.hints) ? data.hints : undefined
       });
 
-      console.log(`Loaded writeup: ${file.name}${isLocked ? ' [LOCKED]' : ''}`);
     } catch (e) {
       console.error(`Failed to load writeup from storage: ${file.name}`, e);
     }
@@ -149,7 +217,8 @@ export const loadWriteupsFromStorage = async (authContext?: WriteupAuthContext):
   if (writeups.length === 0) {
     console.warn('No writeups found in Appwrite storage. Ensure files are uploaded and bucket is configured.');
   } else {
-    console.log(`Successfully loaded ${writeups.length} writeups from Appwrite storage`);
+    const lockedCount = writeups.filter(w => w.locked).length;
+    console.log(`Successfully loaded ${writeups.length} writeups (${lockedCount} locked)`);
   }
 
   return writeups;
