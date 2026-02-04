@@ -30,3 +30,6 @@ dist-ssr
 
 # VM Agent (private - not pushed to GitHub)
 vm-agent/
+
+# Private writeups (not pushed to GitHub)
+writeups/
