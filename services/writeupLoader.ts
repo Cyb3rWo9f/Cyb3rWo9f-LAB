@@ -194,12 +194,20 @@ async function fetchFileContent(
     // Add auth headers for private bucket
     if (requireAuth) {
       const authHeaders = await getAuthHeaders();
-      Object.assign(headers, authHeaders);
+      // Convert Authorization Bearer to X-Appwrite-JWT format
+      const authHeader = authHeaders['Authorization'] as string | undefined;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        headers['X-Appwrite-JWT'] = authHeader.replace('Bearer ', '');
+      }
     }
     
     const response = await fetch(
       `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/download`,
-      { method: 'GET', headers }
+      { 
+        method: 'GET', 
+        headers,
+        credentials: 'include' // Include cookies for session auth
+      }
     );
 
     if (!response.ok) {
