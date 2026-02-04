@@ -193,13 +193,33 @@ async function fetchFileContent(
     
     // Add auth headers for private bucket
     if (requireAuth) {
+      console.log('🔐 Fetching auth headers for private bucket access...');
       const authHeaders = await getAuthHeaders();
+      console.log('📋 Auth headers received:', Object.keys(authHeaders));
+      
       // Convert Authorization Bearer to X-Appwrite-JWT format
       const authHeader = authHeaders['Authorization'] as string | undefined;
       if (authHeader && authHeader.startsWith('Bearer ')) {
-        headers['X-Appwrite-JWT'] = authHeader.replace('Bearer ', '');
+        const jwt = authHeader.replace('Bearer ', '');
+        headers['X-Appwrite-JWT'] = jwt;
+        console.log('✅ JWT added to request, length:', jwt.length);
+        
+        // Decode JWT to see claims (for debugging)
+        try {
+          const parts = jwt.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            console.log('📦 JWT payload:', payload);
+          }
+        } catch (e) {
+          console.log('⚠️ Could not decode JWT');
+        }
+      } else {
+        console.log('⚠️ No Authorization header or not Bearer format:', authHeader ? 'exists' : 'missing');
       }
     }
+    
+    console.log(`📥 Fetching file: ${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/download`);
     
     const response = await fetch(
       `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/download`,
@@ -210,9 +230,13 @@ async function fetchFileContent(
       }
     );
 
+    console.log('📬 Response status:', response.status);
+    
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        console.log(`🔒 Access denied to file ${fileId} - user not authorized`);
+        console.log(`🔒 Access denied to file ${fileId} - user not authorized (${response.status})`);
+        const errorText = await response.text();
+        console.log('🔒 Error response:', errorText);
         return null;
       }
       console.error(`Failed to fetch file ${fileId}: ${response.status}`);
