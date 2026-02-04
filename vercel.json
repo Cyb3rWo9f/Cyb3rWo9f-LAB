@@ -4,5 +4,18 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.cyb3rwo9f.me"
+        }
+      ],
+      "destination": "https://cyb3rwo9f.me/:path*",
+      "permanent": true
+    }
+  ]
 }
