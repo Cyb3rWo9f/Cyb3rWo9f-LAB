@@ -50,7 +50,6 @@ const FEATURED_LANGUAGES = [
   'SQL',
   'C++',
   'PowerShell',
-  'Ruby',
   'Lua',
 ];
 
