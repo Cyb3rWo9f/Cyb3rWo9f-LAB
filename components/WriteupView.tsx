@@ -1749,21 +1749,6 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
                     )}
                   </div>
                 )}
-
-                {/* Hints for locked content */}
-                {w.locked && !(isAuthenticated && isApproved) && w.hints && w.hints.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                    {w.hints.slice(0, 2).map((hint, i) => (
-                      <div key={i} className="border border-emerald-500/20 bg-emerald-500/5 p-2.5 sm:p-3 rounded-sm">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <Zap size={10} className="text-emerald-500" />
-                          <span className="mono text-[7px] sm:text-[8px] text-emerald-400 uppercase font-bold">Hint {i + 1}</span>
-                        </div>
-                        <div className="text-[10px] sm:text-[11px] text-zinc-400 leading-relaxed">{hint}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Right side - Stats & Arrow */}
