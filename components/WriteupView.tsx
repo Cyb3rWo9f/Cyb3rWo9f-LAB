@@ -1186,19 +1186,27 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
                       <span className="mono text-[7px] sm:text-[8px] text-zinc-600 uppercase">Read-Only</span>
                     </div>
 
-                    {/* Preview Content with Blur */}
-                    <div className="relative p-3 sm:p-4 max-h-[200px] sm:max-h-[250px] overflow-hidden">
-                      {/* Show excerpt as preview for locked content */}
-                      <div className="prose-industrial preview-body text-zinc-400 text-sm leading-relaxed">
-                        {selectedWriteup.excerpt ? (
-                          <>
-                            <p className="text-zinc-300 mb-3">{selectedWriteup.excerpt}</p>
-                            <p className="text-zinc-500 italic">This writeup covers advanced techniques and methodologies that require verified access...</p>
-                          </>
-                        ) : (
-                          <p className="text-zinc-500 italic">Preview content not available for this locked writeup.</p>
-                        )}
-                      </div>
+                    {/* Preview Content with Blur - renders previewContent as markdown */}
+                    <div className="relative p-3 sm:p-4 max-h-[350px] sm:max-h-[450px] overflow-hidden">
+                      {/* Render actual preview content as markdown */}
+                      {selectedWriteup.previewContent ? (
+                        <div 
+                          className="prose-industrial preview-body"
+                          dangerouslySetInnerHTML={{ __html: (() => {
+                            try {
+                              return marked.parse(selectedWriteup.previewContent) as string;
+                            } catch {
+                              return selectedWriteup.previewContent;
+                            }
+                          })() }}
+                        />
+                      ) : selectedWriteup.excerpt ? (
+                        <div className="prose-industrial preview-body text-zinc-400 text-sm leading-relaxed">
+                          <p className="text-zinc-300 mb-3">{selectedWriteup.excerpt}</p>
+                        </div>
+                      ) : (
+                        <p className="text-zinc-500 italic">Preview content not available for this locked writeup.</p>
+                      )}
                       
                       {/* Gradient blur overlay */}
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/95 pointer-events-none" />

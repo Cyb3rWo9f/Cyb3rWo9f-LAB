@@ -33,7 +33,7 @@ import { getAuthHeaders } from './auth';
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT;
 const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID;
 const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-const APPWRITE_WRITEUPS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_WRITEUPS_COLLECTION_ID || 'writeups_meta';
+const APPWRITE_WRITEUPS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_WRITEUPS_COLLECTION_ID;
 const APPWRITE_PUBLIC_BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 const APPWRITE_PRIVATE_BUCKET_ID = import.meta.env.VITE_APPWRITE_PRIVATE_BUCKET_ID;
 
@@ -67,6 +67,7 @@ interface WriteupMetadata {
   $id: string;
   title: string;
   excerpt: string;
+  previewContent?: string; // Markdown content for locked preview
   date: string;
   category: string;
   tags: string;  // JSON string
@@ -303,6 +304,7 @@ async function loadFromDatabase(
         id: meta.$id,
         title: meta.title,
         excerpt: meta.excerpt || '',
+        previewContent: meta.previewContent || '', // Include preview content for locked writeups
         date: meta.date || '',
         readingTime: meta.locked && !canAccessLocked ? '? MIN' : (meta.readingTime || '5 MIN'),
         category: meta.category || 'Uncategorized',
