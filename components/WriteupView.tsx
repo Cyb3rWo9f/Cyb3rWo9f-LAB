@@ -1187,7 +1187,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
                     </div>
 
                     {/* Preview Content with Blur - renders previewContent as markdown */}
-                    <div className="relative p-3 sm:p-4 max-h-[350px] sm:max-h-[450px] overflow-hidden">
+                    <div className="relative p-3 sm:p-4 max-h-[180px] sm:max-h-[220px] overflow-hidden">
                       {/* Render actual preview content as markdown */}
                       {selectedWriteup.previewContent ? (
                         <div 
