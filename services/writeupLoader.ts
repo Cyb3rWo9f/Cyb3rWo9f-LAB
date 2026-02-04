@@ -1,5 +1,5 @@
 import { Writeup } from '../types';
-import { getAuthHeaders } from './auth';
+import { Client, Storage } from 'appwrite';
 
 /**
  * Secure Writeup Loader v2
@@ -28,6 +28,15 @@ import { getAuthHeaders } from './auth';
  * - Private bucket: Read permission = Users with 'approved' label
  * - Unauthorized users CANNOT fetch locked content at all (Appwrite blocks it)
  */
+
+// Initialize Appwrite client (shared with auth.ts session)
+const client = new Client();
+client
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID);
+
+// Initialize Storage service - this uses the same session as Account
+const storage = new Storage(client);
 
 // Environment config
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT;
@@ -179,7 +188,7 @@ async function listFilesInBucket(bucketId: string): Promise<any[]> {
 
 /**
  * Fetch file content from storage bucket
- * For private bucket, includes auth headers
+ * Uses Appwrite SDK for proper session-based authentication
  */
 async function fetchFileContent(
   bucketId: string, 
@@ -187,63 +196,63 @@ async function fetchFileContent(
   requireAuth: boolean = false
 ): Promise<string | null> {
   try {
-    const headers: HeadersInit = {
-      'X-Appwrite-Project': APPWRITE_PROJECT_ID
-    };
+    console.log(`📥 Fetching file from bucket: ${bucketId}, file: ${fileId}, requireAuth: ${requireAuth}`);
     
-    // Add auth headers for private bucket
-    if (requireAuth) {
-      console.log('🔐 Fetching auth headers for private bucket access...');
-      const authHeaders = await getAuthHeaders();
-      console.log('📋 Auth headers received:', Object.keys(authHeaders));
+    // Use Appwrite SDK's getFileDownload - it returns a URL
+    // For public bucket, we can use the URL directly
+    // For private bucket, we need to fetch with credentials
+    
+    if (!requireAuth) {
+      // Public bucket - use direct URL (no auth needed)
+      const downloadUrl = storage.getFileDownload(bucketId, fileId);
+      console.log('📥 Public file URL:', downloadUrl.toString());
       
-      // Convert Authorization Bearer to X-Appwrite-JWT format
-      const authHeader = authHeaders['Authorization'] as string | undefined;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const jwt = authHeader.replace('Bearer ', '');
-        headers['X-Appwrite-JWT'] = jwt;
-        console.log('✅ JWT added to request, length:', jwt.length);
-        
-        // Decode JWT to see claims (for debugging)
-        try {
-          const parts = jwt.split('.');
-          if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            console.log('📦 JWT payload:', payload);
-          }
-        } catch (e) {
-          console.log('⚠️ Could not decode JWT');
-        }
-      } else {
-        console.log('⚠️ No Authorization header or not Bearer format:', authHeader ? 'exists' : 'missing');
-      }
-    }
-    
-    console.log(`📥 Fetching file: ${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/download`);
-    
-    const response = await fetch(
-      `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/download`,
-      { 
-        method: 'GET', 
-        headers,
-        credentials: 'include' // Include cookies for session auth
-      }
-    );
-
-    console.log('📬 Response status:', response.status);
-    
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        console.log(`🔒 Access denied to file ${fileId} - user not authorized (${response.status})`);
-        const errorText = await response.text();
-        console.log('🔒 Error response:', errorText);
+      const response = await fetch(downloadUrl.toString());
+      if (!response.ok) {
+        console.error(`Failed to fetch file ${fileId}: ${response.status}`);
         return null;
       }
-      console.error(`Failed to fetch file ${fileId}: ${response.status}`);
+      return await response.text();
+    }
+    
+    // Private bucket - use Appwrite SDK which handles session cookies automatically
+    console.log('🔐 Private bucket - using Appwrite SDK with session...');
+    
+    try {
+      // The SDK's getFileDownload returns a URL, but for private files
+      // we need to use getFileView or fetch with session
+      const downloadUrl = storage.getFileDownload(bucketId, fileId);
+      console.log('📥 Private file URL:', downloadUrl.toString());
+      
+      // Fetch with credentials to include session cookies
+      const response = await fetch(downloadUrl.toString(), {
+        credentials: 'include'
+      });
+      
+      console.log('📬 Response status:', response.status);
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.log(`🔒 Access denied to file ${fileId} - user not authorized (${response.status})`);
+          try {
+            const errorText = await response.text();
+            console.log('🔒 Error response:', errorText);
+          } catch {}
+          return null;
+        }
+        console.error(`Failed to fetch file ${fileId}: ${response.status}`);
+        return null;
+      }
+      
+      const content = await response.text();
+      console.log(`✅ Successfully fetched private file, length: ${content.length}`);
+      return content;
+      
+    } catch (sdkError: any) {
+      console.error('🔒 Appwrite SDK error:', sdkError?.message || sdkError);
       return null;
     }
-
-    return await response.text();
+    
   } catch (error) {
     console.error('Error fetching file content:', error);
     return null;
