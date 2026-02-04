@@ -1169,85 +1169,89 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
 
             {/* Content Section */}
             <div className="relative p-3 sm:p-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-                {/* Preview Panel */}
-                <div className="lg:col-span-2 relative">
-                  <div className="border border-zinc-800 bg-black/40 rounded-sm overflow-hidden">
-                    {/* Preview Header */}
-                    <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 rounded-full bg-red-500/80" />
-                          <span className="w-2 h-2 rounded-full bg-yellow-500/80" />
-                          <span className="w-2 h-2 rounded-full bg-green-500/80" />
-                        </div>
-                        <span className="mono text-[8px] sm:text-[9px] text-emerald-400 uppercase tracking-wider font-bold">Content Preview</span>
+              {/* Preview Panel - Full Width */}
+              <div className="relative">
+                <div className="border border-zinc-800 bg-black/40 rounded-sm overflow-hidden">
+                  {/* Preview Header */}
+                  <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500/80" />
+                        <span className="w-2 h-2 rounded-full bg-yellow-500/80" />
+                        <span className="w-2 h-2 rounded-full bg-green-500/80" />
                       </div>
-                      <span className="mono text-[7px] sm:text-[8px] text-zinc-600 uppercase">Read-Only</span>
+                      <span className="mono text-[8px] sm:text-[9px] text-emerald-400 uppercase tracking-wider font-bold">Content Preview</span>
                     </div>
+                    <span className="mono text-[7px] sm:text-[8px] text-zinc-600 uppercase">Read-Only</span>
+                  </div>
 
-                    {/* Preview Content with Blur - renders previewContent as markdown */}
-                    <div className="relative p-3 sm:p-4 max-h-[180px] sm:max-h-[220px] overflow-hidden">
-                      {/* Render actual preview content as markdown */}
-                      {selectedWriteup.previewContent ? (
-                        <div 
-                          className="prose-industrial preview-body"
-                          dangerouslySetInnerHTML={{ __html: (() => {
-                            try {
-                              return marked.parse(selectedWriteup.previewContent) as string;
-                            } catch {
-                              return selectedWriteup.previewContent;
-                            }
-                          })() }}
-                        />
-                      ) : selectedWriteup.excerpt ? (
-                        <div className="prose-industrial preview-body text-zinc-400 text-sm leading-relaxed">
-                          <p className="text-zinc-300 mb-3">{selectedWriteup.excerpt}</p>
-                        </div>
-                      ) : (
-                        <p className="text-zinc-500 italic">Preview content not available for this locked writeup.</p>
-                      )}
-                      
-                      {/* Gradient blur overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/95 pointer-events-none" />
-                      <div className="absolute bottom-0 inset-x-0 h-32 sm:h-40 backdrop-blur-[2px] bg-gradient-to-t from-black/90 via-black/70 to-transparent pointer-events-none" />
-                      
-                      {/* Lock indicator overlay */}
-                      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 pb-4 sm:pb-6">
-                        <div className="p-2.5 sm:p-3 border border-red-500/30 bg-black/80 rounded-full shadow-lg shadow-red-500/10">
-                          <Lock size={18} className="sm:hidden text-red-400" />
-                          <Lock size={22} className="hidden sm:block text-red-400" />
-                        </div>
-                        <span className="mono text-[9px] sm:text-[10px] text-zinc-500 uppercase tracking-wider">Full content locked</span>
+                  {/* Preview Content with Blur - renders previewContent as markdown */}
+                  <div className="relative p-3 sm:p-4 max-h-[280px] sm:max-h-[350px] overflow-hidden">
+                    {/* Render actual preview content as markdown */}
+                    {selectedWriteup.previewContent ? (
+                      <div 
+                        className="prose-industrial preview-body"
+                        dangerouslySetInnerHTML={{ __html: (() => {
+                          try {
+                            return marked.parse(selectedWriteup.previewContent) as string;
+                          } catch {
+                            return selectedWriteup.previewContent;
+                          }
+                        })() }}
+                      />
+                    ) : selectedWriteup.excerpt ? (
+                      <div className="prose-industrial preview-body text-zinc-400 text-sm leading-relaxed">
+                        <p className="text-zinc-300 mb-3">{selectedWriteup.excerpt}</p>
                       </div>
+                    ) : (
+                      <p className="text-zinc-500 italic">Preview content not available for this locked writeup.</p>
+                    )}
+                    
+                    {/* Gradient blur overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/95 pointer-events-none" />
+                    <div className="absolute bottom-0 inset-x-0 h-32 sm:h-40 backdrop-blur-[2px] bg-gradient-to-t from-black/90 via-black/70 to-transparent pointer-events-none" />
+                    
+                    {/* Lock indicator overlay */}
+                    <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 pb-4 sm:pb-6">
+                      <div className="p-2.5 sm:p-3 border border-red-500/30 bg-black/80 rounded-full shadow-lg shadow-red-500/10">
+                        <Lock size={18} className="sm:hidden text-red-400" />
+                        <Lock size={22} className="hidden sm:block text-red-400" />
+                      </div>
+                      <span className="mono text-[9px] sm:text-[10px] text-zinc-500 uppercase tracking-wider">Full content locked</span>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Hints Panel */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap size={12} className="text-emerald-500" />
-                    <span className="mono text-[9px] sm:text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Available Hints</span>
+              {/* Hints Panel - Below Preview */}
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap size={12} className="text-emerald-500" />
+                  <span className="mono text-[9px] sm:text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Flag Hints</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* User Flag Hint */}
+                  <div className="group relative border border-emerald-500/30 bg-emerald-500/5 p-3 sm:p-4 rounded-sm overflow-hidden">
+                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500/50" />
+                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500/50" />
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="mono text-[8px] sm:text-[9px] text-emerald-400 uppercase font-bold tracking-wider">User Flag Hint</span>
+                    </div>
+                    <div className="text-[11px] sm:text-[12px] text-zinc-300 leading-relaxed">
+                      {selectedWriteup.hints?.[0] || 'Complete initial foothold to capture the user flag.'}
+                    </div>
                   </div>
-                  {(selectedWriteup.hints || []).slice(0, 3).map((hint, i) => (
-                    <div key={i} className="group relative border border-emerald-500/30 bg-emerald-500/5 p-3 sm:p-4 rounded-sm overflow-hidden">
-                      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500/50" />
-                      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500/50" />
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="mono text-[8px] sm:text-[9px] text-emerald-400 uppercase font-bold tracking-wider">Hint #{i + 1}</span>
-                      </div>
-                      <div className="text-[11px] sm:text-[12px] text-zinc-300 leading-relaxed">{hint}</div>
+                  {/* Root Flag Hint */}
+                  <div className="group relative border border-red-500/30 bg-red-500/5 p-3 sm:p-4 rounded-sm overflow-hidden">
+                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-red-500/50" />
+                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-red-500/50" />
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="mono text-[8px] sm:text-[9px] text-red-400 uppercase font-bold tracking-wider">Root Flag Hint</span>
                     </div>
-                  ))}
-                  {(!selectedWriteup.hints || selectedWriteup.hints.length === 0) && (
-                    <div className="border border-zinc-800 bg-zinc-900/40 p-3 sm:p-4 rounded-sm">
-                      <div className="flex items-center gap-2 text-zinc-600">
-                        <AlertTriangle size={14} />
-                        <span className="text-[11px] sm:text-[12px]">No hints available for this writeup.</span>
-                      </div>
+                    <div className="text-[11px] sm:text-[12px] text-zinc-300 leading-relaxed">
+                      {selectedWriteup.hints?.[1] || 'Escalate privileges to capture the root flag.'}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
