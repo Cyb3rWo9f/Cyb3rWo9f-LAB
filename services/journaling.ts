@@ -6,6 +6,8 @@
  * Attempting direct fetch - falls back to hardcoded values on CORS error.
  */
 
+import { logger } from './logger';
+
 export interface JournalingStats {
   totalEntries: number;
   currentStreak: number;
@@ -20,7 +22,7 @@ const JOURNALING_PROFILE_URL = import.meta.env.VITE_JOURNALING_PROFILE_URL || 'h
  */
 export async function fetchJournalingStats(): Promise<JournalingStats> {
   try {
-    console.log('Fetching journaling stats from API:', JOURNALING_API_URL);
+    logger.log('Fetching journaling stats from API:', JOURNALING_API_URL);
     
     const response = await fetch(JOURNALING_API_URL, {
       method: 'GET',
@@ -29,11 +31,11 @@ export async function fetchJournalingStats(): Promise<JournalingStats> {
       },
     });
 
-    console.log('Response status:', response.status);
+    logger.log('Response status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Journaling API response:', data);
+      logger.log('Journaling API response:', data);
       
       const stats = {
         totalEntries: data.totalEntries || 0,
@@ -41,15 +43,15 @@ export async function fetchJournalingStats(): Promise<JournalingStats> {
         bestStreak: data.longestStreak || 0,
       };
       
-      console.log('Final journaling stats:', stats);
+      logger.log('Final journaling stats:', stats);
       return stats;
     }
   } catch (error) {
-    console.log('Direct API fetch failed (CORS):', error);
+    logger.log('Direct API fetch failed (CORS):', error);
   }
   
   // Fallback: return hardcoded cached values
-  console.log('Using cached journaling stats');
+  logger.log('Using cached journaling stats');
   return {
     totalEntries: 1,
     currentStreak: 1,

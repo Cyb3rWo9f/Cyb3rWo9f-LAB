@@ -3,6 +3,7 @@ import { ArrowLeft, Github, Mail, Code2, RefreshCw, Twitter, X, CheckCircle2, Al
 import { fetchLanguageStats, fetchGitHubStats, fetchFeaturedProjects, getLastSyncTime, formatBytes, LanguageSkill, GitHubStats, FeaturedProject } from '../services/github';
 import { sendContactMessage } from '../services/emailService';
 import { fetchJournalingStats, JournalingStats } from '../services/journaling';
+import { logger } from '../services/logger';
 
 interface ToolsViewProps {
   onBack: () => void;
@@ -49,7 +50,7 @@ const AboutView: React.FC<ToolsViewProps> = ({ onBack }) => {
       setProjects(projectsData);
       setLastSync(getLastSyncTime());
     } catch (err) {
-      console.error('Failed to load GitHub data:', err);
+      logger.error('Failed to load GitHub data:', err);
       setError('Failed to fetch GitHub data. Using cached values.');
     } finally {
       setLoading(false);

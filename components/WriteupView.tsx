@@ -6,6 +6,7 @@ import { loadAllWriteups, loadWriteupContent, WriteupAuthContext } from '../serv
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../services/logger';
 
 interface WriteupViewProps {
   onBack: () => void;
@@ -674,7 +675,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
         
         setWriteups(validData);
       } catch (error) {
-        console.error("Failed to load writeups", error);
+        logger.error("Failed to load writeups", error);
         setWriteups([]);
       } finally {
         setLoading(false);
@@ -805,7 +806,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
           };
         });
     } catch (e) {
-      console.error("TOC generation failed", e);
+      logger.error("TOC generation failed", e);
       return [];
     }
   }, [selectedWriteup]);
@@ -1305,7 +1306,7 @@ const WriteupView: React.FC<WriteupViewProps> = ({ onBack }) => {
     try {
       htmlContent = marked.parse(selectedWriteup.content || '') as string;
     } catch (e) {
-      console.error("Markdown parsing failed", e);
+      logger.error("Markdown parsing failed", e);
       return (
         <div className="w-full max-w-lg mx-auto text-center py-20">
            <AlertTriangle className="text-red-500 mx-auto mb-6" size={48} />

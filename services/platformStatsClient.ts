@@ -1,4 +1,5 @@
 import { Client, Databases, Query } from 'appwrite';
+import { logger } from './logger';
 
 /**
  * Generic platform stats structure (same columns for all platforms)
@@ -54,7 +55,7 @@ export async function fetchPlatformStats(platformId: string): Promise<PlatformSt
       updatedAt: doc.updatedAt ?? doc.$updatedAt,
     };
   } catch (error) {
-    console.warn(`[PlatformStatsClient] Failed to fetch ${platformId}`, error);
+    logger.warn(`[PlatformStatsClient] Failed to fetch ${platformId}`, error);
     return null;
   }
 }
@@ -83,7 +84,7 @@ export async function fetchAllPlatformStats(): Promise<PlatformStats[]> {
       updatedAt: doc.updatedAt ?? doc.$updatedAt,
     }));
   } catch (error) {
-    console.warn('[PlatformStatsClient] Failed to fetch all stats', error);
+    logger.warn('[PlatformStatsClient] Failed to fetch all stats', error);
     return [];
   }
 }

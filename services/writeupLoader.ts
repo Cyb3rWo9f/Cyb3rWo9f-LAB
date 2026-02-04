@@ -1,5 +1,6 @@
 import { Writeup } from '../types';
 import { Client, Storage } from 'appwrite';
+import { logger } from './logger';
 
 /**
  * Secure Writeup Loader v2
@@ -148,14 +149,14 @@ async function fetchWriteupMetadata(): Promise<WriteupMetadata[]> {
     );
 
     if (!response.ok) {
-      console.warn('Writeups metadata collection not found, falling back to storage-only mode');
+      logger.warn('Writeups metadata collection not found, falling back to storage-only mode');
       return [];
     }
 
     const data = await response.json();
     return data.documents || [];
   } catch (error) {
-    console.warn('Failed to fetch writeup metadata:', error);
+    logger.warn('Failed to fetch writeup metadata:', error);
     return [];
   }
 }
@@ -196,7 +197,7 @@ async function fetchFileContent(
   requireAuth: boolean = false
 ): Promise<string | null> {
   try {
-    console.log(`📥 Fetching file from bucket: ${bucketId}, file: ${fileId}, requireAuth: ${requireAuth}`);
+    logger.log(`📥 Fetching file from bucket: ${bucketId}, file: ${fileId}, requireAuth: ${requireAuth}`);
     
     // Use Appwrite SDK's getFileDownload - it returns a URL
     // For public bucket, we can use the URL directly
@@ -205,56 +206,56 @@ async function fetchFileContent(
     if (!requireAuth) {
       // Public bucket - use direct URL (no auth needed)
       const downloadUrl = storage.getFileDownload(bucketId, fileId);
-      console.log('📥 Public file URL:', downloadUrl.toString());
+      logger.log('📥 Public file URL:', downloadUrl.toString());
       
       const response = await fetch(downloadUrl.toString());
       if (!response.ok) {
-        console.error(`Failed to fetch file ${fileId}: ${response.status}`);
+        logger.error(`Failed to fetch file ${fileId}: ${response.status}`);
         return null;
       }
       return await response.text();
     }
     
     // Private bucket - use Appwrite SDK which handles session cookies automatically
-    console.log('🔐 Private bucket - using Appwrite SDK with session...');
+    logger.log('🔐 Private bucket - using Appwrite SDK with session...');
     
     try {
       // The SDK's getFileDownload returns a URL, but for private files
       // we need to use getFileView or fetch with session
       const downloadUrl = storage.getFileDownload(bucketId, fileId);
-      console.log('📥 Private file URL:', downloadUrl.toString());
+      logger.log('📥 Private file URL:', downloadUrl.toString());
       
       // Fetch with credentials to include session cookies
       const response = await fetch(downloadUrl.toString(), {
         credentials: 'include'
       });
       
-      console.log('📬 Response status:', response.status);
+      logger.log('📬 Response status:', response.status);
       
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          console.log(`🔒 Access denied to file ${fileId} - user not authorized (${response.status})`);
+          logger.log(`🔒 Access denied to file ${fileId} - user not authorized (${response.status})`);
           try {
             const errorText = await response.text();
-            console.log('🔒 Error response:', errorText);
+            logger.log('🔒 Error response:', errorText);
           } catch {}
           return null;
         }
-        console.error(`Failed to fetch file ${fileId}: ${response.status}`);
+        logger.error(`Failed to fetch file ${fileId}: ${response.status}`);
         return null;
       }
       
       const content = await response.text();
-      console.log(`✅ Successfully fetched private file, length: ${content.length}`);
+      logger.log(`✅ Successfully fetched private file, length: ${content.length}`);
       return content;
       
     } catch (sdkError: any) {
-      console.error('🔒 Appwrite SDK error:', sdkError?.message || sdkError);
+      logger.error('🔒 Appwrite SDK error:', sdkError?.message || sdkError);
       return null;
     }
     
   } catch (error) {
-    console.error('Error fetching file content:', error);
+    logger.error('Error fetching file content:', error);
     return null;
   }
 }
@@ -268,18 +269,18 @@ async function fetchFileContent(
  */
 export const loadAllWriteups = async (authContext?: WriteupAuthContext): Promise<Writeup[]> => {
   const canAccessLocked = authContext?.isAuthenticated && authContext?.isApproved;
-  console.log(`🔐 Auth: authenticated=${authContext?.isAuthenticated}, approved=${authContext?.isApproved}`);
+  logger.log(`🔐 Auth: authenticated=${authContext?.isAuthenticated}, approved=${authContext?.isApproved}`);
 
   // Try database mode first (new secure method)
   const metadata = await fetchWriteupMetadata();
   
   if (metadata.length > 0) {
-    console.log(`📋 Database mode: Found ${metadata.length} writeups in metadata collection`);
+    logger.log(`📋 Database mode: Found ${metadata.length} writeups in metadata collection`);
     return loadFromDatabase(metadata, canAccessLocked || false);
   }
   
   // Fallback: Load from storage directly (legacy mode)
-  console.log('📦 Legacy mode: Using storage-only (less secure)');
+  logger.log('📦 Legacy mode: Using storage-only (less secure)');
   return loadFromStorageLegacy(authContext);
 };
 
@@ -313,7 +314,7 @@ async function loadFromDatabase(
         // LOCKED & NOT AUTHORIZED: 
         // - Don't even TRY to fetch from private bucket (will fail anyway)
         // - Show placeholder content
-        console.log(`🔒 BLOCKED: ${meta.title} (user not authorized, content not fetched)`);
+        logger.log(`🔒 BLOCKED: ${meta.title} (user not authorized, content not fetched)`);
         content = LOCKED_CONTENT_PLACEHOLDER;
       } else {
         // Either:
@@ -328,15 +329,15 @@ async function loadFromDatabase(
         if (fileContent) {
           const parsed = parseFrontmatter(fileContent);
           content = parsed.content;
-          console.log(`✅ Loaded: ${meta.title}${meta.locked ? ' [LOCKED-AUTHORIZED]' : ''}`);
+          logger.log(`✅ Loaded: ${meta.title}${meta.locked ? ' [LOCKED-AUTHORIZED]' : ''}`);
         } else {
           // Could not fetch - might be permission denied for private bucket
           if (meta.locked) {
-            console.log(`🔒 Access denied for: ${meta.title}`);
+            logger.log(`🔒 Access denied for: ${meta.title}`);
             content = LOCKED_CONTENT_PLACEHOLDER;
           } else {
             content = '*Failed to load content. Please try again later.*';
-            console.warn(`⚠️ Failed to load: ${meta.title}`);
+            logger.warn(`⚠️ Failed to load: ${meta.title}`);
           }
         }
       }
@@ -357,12 +358,12 @@ async function loadFromDatabase(
       });
 
     } catch (error) {
-      console.error(`Failed to process writeup ${meta.$id}:`, error);
+      logger.error(`Failed to process writeup ${meta.$id}:`, error);
     }
   }
 
   const lockedCount = writeups.filter(w => w.locked).length;
-  console.log(`📚 Loaded ${writeups.length} writeups (${lockedCount} locked)`);
+  logger.log(`📚 Loaded ${writeups.length} writeups (${lockedCount} locked)`);
   return writeups;
 }
 
@@ -381,7 +382,7 @@ async function loadFromStorageLegacy(authContext?: WriteupAuthContext): Promise<
   const files = await listFilesInBucket(APPWRITE_PUBLIC_BUCKET_ID);
   const mdFiles = files.filter((f: any) => f.name.endsWith('.md'));
   
-  console.log(`📄 Found ${mdFiles.length} markdown files`);
+  logger.log(`📄 Found ${mdFiles.length} markdown files`);
 
   for (const file of mdFiles) {
     try {
@@ -392,7 +393,7 @@ async function loadFromStorageLegacy(authContext?: WriteupAuthContext): Promise<
       
       if (isLockedByName && !canAccessLocked) {
         // SKIP fetching locked files for unauthorized users
-        console.log(`🔒 SKIPPED (by name): ${file.name}`);
+        logger.log(`🔒 SKIPPED (by name): ${file.name}`);
         
         const cleanName = file.name
           .replace('[LOCKED]-', '')
@@ -420,7 +421,7 @@ async function loadFromStorageLegacy(authContext?: WriteupAuthContext): Promise<
       const content = await fetchFileContent(APPWRITE_PUBLIC_BUCKET_ID, file.$id, false);
       
       if (!content) {
-        console.warn(`Failed to download: ${file.name}`);
+        logger.warn(`Failed to download: ${file.name}`);
         continue;
       }
 
@@ -430,8 +431,8 @@ async function loadFromStorageLegacy(authContext?: WriteupAuthContext): Promise<
       
       // SECURITY WARNING for files locked only by frontmatter
       if (isLockedByFrontmatter && !isLockedByName && !canAccessLocked) {
-        console.warn(`⚠️ SECURITY: ${file.name} has locked:true but content was fetched!`);
-        console.warn(`⚠️ Fix: Use CLI to push to private bucket, or rename to [LOCKED]-${file.name}`);
+        logger.warn(`⚠️ SECURITY: ${file.name} has locked:true but content was fetched!`);
+        logger.warn(`⚠️ Fix: Use CLI to push to private bucket, or rename to [LOCKED]-${file.name}`);
       }
 
       const writeupId = data.id || file.name.replace('.md', '').replace('[LOCKED]-', '');
@@ -450,10 +451,10 @@ async function loadFromStorageLegacy(authContext?: WriteupAuthContext): Promise<
         hints: Array.isArray(data.hints) ? data.hints : undefined
       });
       
-      console.log(`✅ Loaded: ${file.name}${isLocked ? ' [LOCKED]' : ''}`);
+      logger.log(`✅ Loaded: ${file.name}${isLocked ? ' [LOCKED]' : ''}`);
       
     } catch (error) {
-      console.error(`Failed to load ${file.name}:`, error);
+      logger.error(`Failed to load ${file.name}:`, error);
     }
   }
 

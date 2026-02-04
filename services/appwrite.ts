@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 // Appwrite Configuration from environment variables
 // NOTE: Only endpoint, project ID, database ID, collection ID, and bucket ID are needed
 // API keys should NEVER be exposed in frontend code
@@ -9,11 +11,11 @@ const APPWRITE_BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID;
 
 // Validate Appwrite configuration (API key no longer required for public reads)
 if (!APPWRITE_ENDPOINT || !APPWRITE_PROJECT_ID || !APPWRITE_DATABASE_ID || !APPWRITE_COLLECTION_ID) {
-  console.warn('Appwrite is not fully configured. Please set all environment variables in .env file.');
+  logger.warn('Appwrite is not fully configured. Please set all environment variables in .env file.');
 }
 
 if (!APPWRITE_BUCKET_ID) {
-  console.warn('APPWRITE_BUCKET_ID is not configured. Storage operations will fail.');
+  logger.warn('APPWRITE_BUCKET_ID is not configured. Storage operations will fail.');
 }
 
 // Appwrite REST API functions
@@ -31,13 +33,13 @@ export interface AppwriteDocument {
 
 // Create document - DISABLED (use Appwrite Console)
 export async function setDocument(_data: any): Promise<AppwriteDocument | null> {
-  console.error('setDocument is disabled for security. Use Appwrite Console for write operations.');
+  logger.error('setDocument is disabled for security. Use Appwrite Console for write operations.');
   return null;
 }
 
 // Update document - DISABLED (use Appwrite Console)
 export async function updateDocument(_documentId: string, _data: Record<string, any>): Promise<AppwriteDocument | null> {
-  console.error('updateDocument is disabled for security. Use Appwrite Console for write operations.');
+  logger.error('updateDocument is disabled for security. Use Appwrite Console for write operations.');
   return null;
 }
 
@@ -64,7 +66,7 @@ export async function getDocuments(): Promise<AppwriteDocument[]> {
       ];
       const queryString = queries.map(q => `queries[]=${encodeURIComponent(q)}`).join('&');
       const url = `${APPWRITE_ENDPOINT}/databases/${APPWRITE_DATABASE_ID}/collections/${APPWRITE_COLLECTION_ID}/documents?${queryString}`;
-      console.log(`Fetching documents page ${page + 1} (limit=${limit}, offset=${offset})`);
+      logger.log(`Fetching documents page ${page + 1} (limit=${limit}, offset=${offset})`);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -75,7 +77,7 @@ export async function getDocuments(): Promise<AppwriteDocument[]> {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Failed to fetch documents:', response.status, errorText);
+        logger.error('Failed to fetch documents:', response.status, errorText);
         break;
       }
 
@@ -83,7 +85,7 @@ export async function getDocuments(): Promise<AppwriteDocument[]> {
       const docs: AppwriteDocument[] = data.documents || [];
       const total = data.total || 0;
 
-      console.log(`Page ${page + 1}: ${docs.length} docs (reported total: ${total})`);
+      logger.log(`Page ${page + 1}: ${docs.length} docs (reported total: ${total})`);
 
       allDocs.push(...docs);
 
@@ -97,7 +99,7 @@ export async function getDocuments(): Promise<AppwriteDocument[]> {
       page += 1;
       offset += docs.length;
       if (page > 50) {
-        console.warn('Stopping pagination after 50 pages to avoid infinite loop');
+        logger.warn('Stopping pagination after 50 pages to avoid infinite loop');
         break;
       }
     }
@@ -112,13 +114,13 @@ export async function getDocuments(): Promise<AppwriteDocument[]> {
     });
 
     if (uniqueDocs.length < allDocs.length) {
-      console.log(`Deduplicated: ${allDocs.length} -> ${uniqueDocs.length} documents`);
+      logger.log(`Deduplicated: ${allDocs.length} -> ${uniqueDocs.length} documents`);
     }
 
-    console.log(`Fetched ${uniqueDocs.length} unique documents total`);
+    logger.log(`Fetched ${uniqueDocs.length} unique documents total`);
     return uniqueDocs;
   } catch (error) {
-    console.error('Error fetching documents:', error);
+    logger.error('Error fetching documents:', error);
     return [];
   }
 }
@@ -160,14 +162,14 @@ export async function getDocument(documentId: string): Promise<AppwriteDocument 
     
     return parsed;
   } catch (error) {
-    console.error('Error fetching document:', error);
+    logger.error('Error fetching document:', error);
     return null;
   }
 }
 
 // Delete document - DISABLED (use Appwrite Console)
 export async function deleteDocument(_documentId: string): Promise<boolean> {
-  console.error('deleteDocument is disabled for security. Use Appwrite Console for delete operations.');
+  logger.error('deleteDocument is disabled for security. Use Appwrite Console for delete operations.');
   return false;
 }
 
@@ -177,13 +179,13 @@ export async function deleteDocument(_documentId: string): Promise<boolean> {
 
 // Upload file - DISABLED (use Appwrite Console)
 export async function uploadFileToStorage(_fileName: string, _fileContent: string): Promise<any | null> {
-  console.error('uploadFileToStorage is disabled for security. Use Appwrite Console for uploads.');
+  logger.error('uploadFileToStorage is disabled for security. Use Appwrite Console for uploads.');
   return null;
 }
 
 // Update file - DISABLED (use Appwrite Console)
 export async function updateFileInStorage(_fileName: string, _fileContent: string): Promise<any | null> {
-  console.error('updateFileInStorage is disabled for security. Use Appwrite Console for updates.');
+  logger.error('updateFileInStorage is disabled for security. Use Appwrite Console for updates.');
   return null;
 }
 
@@ -202,15 +204,15 @@ export async function listFilesInStorage(): Promise<{ $id: string; name: string;
     );
 
     if (!response.ok) {
-      console.error('Failed to list files in storage:', response.status);
+      logger.error('Failed to list files in storage:', response.status);
       return [];
     }
 
     const result = await response.json();
-    console.log(`Found ${result.files?.length || 0} files in storage bucket`);
+    logger.log(`Found ${result.files?.length || 0} files in storage bucket`);
     return result.files || [];
   } catch (error) {
-    console.error('Error listing files in storage:', error);
+    logger.error('Error listing files in storage:', error);
     return [];
   }
 }
@@ -229,20 +231,20 @@ export async function getFileFromStorage(fileId: string): Promise<string | null>
     );
 
     if (!response.ok) {
-      console.error(`Failed to fetch file ${fileId}:`, response.status);
+      logger.error(`Failed to fetch file ${fileId}:`, response.status);
       return null;
     }
 
     const content = await response.text();
     return content;
   } catch (error) {
-    console.error('Error fetching file from storage:', error);
+    logger.error('Error fetching file from storage:', error);
     return null;
   }
 }
 
 // Delete file - DISABLED (use Appwrite Console)
 export async function deleteFileFromStorage(_fileName: string): Promise<boolean> {
-  console.error('deleteFileFromStorage is disabled for security. Use Appwrite Console for deletes.');
+  logger.error('deleteFileFromStorage is disabled for security. Use Appwrite Console for deletes.');
   return false;
 }

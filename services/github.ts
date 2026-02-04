@@ -4,6 +4,8 @@
  * No authentication needed for public repos
  */
 
+import { logger } from './logger';
+
 // Load from environment variables (set in .env file)
 const GITHUB_API_BASE = import.meta.env.VITE_GITHUB_API_BASE;
 const GITHUB_USERNAME = import.meta.env.VITE_GITHUB_USERNAME;
@@ -79,7 +81,7 @@ const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours - reduce GitHub API call
 export async function fetchGitHubStats(): Promise<GitHubStats> {
   // Check cache
   if (statsCache && Date.now() - statsCache.timestamp < CACHE_DURATION) {
-    console.log('Using cached GitHub stats');
+    logger.log('Using cached GitHub stats');
     return statsCache.data;
   }
 
@@ -88,7 +90,7 @@ export async function fetchGitHubStats(): Promise<GitHubStats> {
     
     if (!response.ok) {
       // Rate limited or other error
-      console.warn(`GitHub API error: ${response.status}. Using cached values.`);
+      logger.warn(`GitHub API error: ${response.status}. Using cached values.`);
       // Return default values - will be overridden by cache if available
       throw new Error(`GitHub API error: ${response.status}`);
     }
@@ -107,7 +109,7 @@ export async function fetchGitHubStats(): Promise<GitHubStats> {
     
     return stats;
   } catch (error) {
-    console.error('Failed to fetch GitHub stats:', error);
+    logger.error('Failed to fetch GitHub stats:', error);
     // Return cached data if available, otherwise defaults
     if (statsCache) {
       return statsCache.data;
@@ -128,12 +130,12 @@ export async function fetchGitHubStats(): Promise<GitHubStats> {
 export async function fetchLanguageStats(): Promise<LanguageSkill[]> {
   // Check cache first
   if (languageCache && Date.now() - languageCache.timestamp < CACHE_DURATION) {
-    console.log('Using cached language stats');
+    logger.log('Using cached language stats');
     return languageCache.data;
   }
 
   try {
-    console.log(`Fetching repositories for ${GITHUB_USERNAME}...`);
+    logger.log(`Fetching repositories for ${GITHUB_USERNAME}...`);
     
     // Fetch all public repos (paginated, max 100 per page)
     const repos: any[] = [];
@@ -156,7 +158,7 @@ export async function fetchLanguageStats(): Promise<LanguageSkill[]> {
       page++;
     }
 
-    console.log(`Found ${repos.length} repositories`);
+    logger.log(`Found ${repos.length} repositories`);
 
     // Aggregate language bytes across all repos
     const languageTotals: Record<string, number> = {};
@@ -175,7 +177,7 @@ export async function fetchLanguageStats(): Promise<LanguageSkill[]> {
             return await langResponse.json();
           }
         } catch (err) {
-          console.warn(`Failed to fetch languages for ${repo.name}`);
+          logger.warn(`Failed to fetch languages for ${repo.name}`);
         }
         return {};
       });
@@ -256,14 +258,14 @@ export async function fetchLanguageStats(): Promise<LanguageSkill[]> {
       return b.bytes - a.bytes;
     });
 
-    console.log('Language stats:', skills);
+    logger.log('Language stats:', skills);
 
     // Cache the result
     languageCache = { data: skills, timestamp: Date.now() };
 
     return skills;
   } catch (error) {
-    console.error('Failed to fetch language stats:', error);
+    logger.error('Failed to fetch language stats:', error);
     // Return featured languages with 0% on error
     return FEATURED_LANGUAGES.map(name => ({
       name,
@@ -318,7 +320,7 @@ export interface FeaturedProject {
  */
 export async function fetchFeaturedProjects(): Promise<FeaturedProject[]> {
   try {
-    console.log(`Fetching repositories for featured projects...`);
+    logger.log(`Fetching repositories for featured projects...`);
     
     const response = await fetch(
       `${GITHUB_API_BASE}/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`
@@ -347,7 +349,7 @@ export async function fetchFeaturedProjects(): Promise<FeaturedProject[]> {
 
     return featuredRepos;
   } catch (error) {
-    console.error('Error fetching featured projects:', error);
+    logger.error('Error fetching featured projects:', error);
     return [];
   }
 }

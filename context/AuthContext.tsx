@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { logger } from '../services/logger';
 import { 
   User, 
   SessionType,
@@ -52,7 +53,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       const errorParam = params.get('error');
       
       if (errorParam) {
-        console.warn('OAuth error detected:', errorParam);
+        logger.warn('OAuth error detected:', errorParam);
         // Remove error from URL
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -70,7 +71,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth init failed:', error);
+      logger.error('Auth init failed:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -82,7 +83,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       await loginWithGoogle();
       // After redirect, initAuth will be called again
     } catch (error) {
-      console.error('Login failed:', error);
+      logger.error('Login failed:', error);
       throw error;
     }
   }, []);
@@ -98,7 +99,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Users must explicitly choose to continue as guest
       setUser(null);
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', error);
       throw error;
     }
   }, []);

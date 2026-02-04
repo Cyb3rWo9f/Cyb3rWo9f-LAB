@@ -1,4 +1,5 @@
 import { getDocuments } from './appwrite';
+import { logger } from './logger';
 
 export interface NewsArticle {
   id: string;
@@ -32,11 +33,11 @@ const MEMORY_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 // Main export function - fetches news from Appwrite
 export async function fetchCybersecurityNews(): Promise<NewsArticle[]> {
   try {
-    console.log('Fetching news from Appwrite...');
+    logger.log('Fetching news from Appwrite...');
 
     // Fast path: serve from in-memory cache if still fresh
     if (memoryCache && Date.now() - memoryCache.timestamp < MEMORY_CACHE_DURATION && memoryCache.articles.length > 0) {
-      console.log(`⚡ Served from memory cache (${memoryCache.articles.length} articles)`);
+      logger.log(`⚡ Served from memory cache (${memoryCache.articles.length} articles)`);
       return memoryCache.articles;
     }
     
@@ -45,12 +46,12 @@ export async function fetchCybersecurityNews(): Promise<NewsArticle[]> {
     
     // Fetch articles from Appwrite only
     const cachedDocs = await getDocuments();
-    console.log(`Retrieved ${cachedDocs.length} total documents from Appwrite`);
+    logger.log(`Retrieved ${cachedDocs.length} total documents from Appwrite`);
     
     const articles = cachedDocs
       .filter((doc: any) => {
         const hasType = doc.type === 'article';
-        if (!hasType) console.log(`Filtered out non-article doc: type=${doc.type}, id=${doc.$id || doc.id}`);
+        if (!hasType) logger.log(`Filtered out non-article doc: type=${doc.type}, id=${doc.$id || doc.id}`);
         return hasType;
       })
       .map((doc: any) => ({
@@ -70,18 +71,18 @@ export async function fetchCybersecurityNews(): Promise<NewsArticle[]> {
         return dateB - dateA;
       }) as NewsArticle[];
 
-    console.log(`After filtering: ${articles.length} articles (from ${cachedDocs.length} total docs)`);
+    logger.log(`After filtering: ${articles.length} articles (from ${cachedDocs.length} total docs)`);
 
     if (articles.length > 0) {
-      console.log(`Using Appwrite articles (${articles.length})`);
+      logger.log(`Using Appwrite articles (${articles.length})`);
       memoryCache = { articles, timestamp: Date.now() };
       return articles;
     }
 
-    console.warn('No articles found in Appwrite; returning fallback content only');
+    logger.warn('No articles found in Appwrite; returning fallback content only');
     return FALLBACK_NEWS;
   } catch (error) {
-    console.error('Error fetching cybersecurity news:', error);
+    logger.error('Error fetching cybersecurity news:', error);
     return FALLBACK_NEWS;
   }
 }
@@ -89,7 +90,7 @@ export async function fetchCybersecurityNews(): Promise<NewsArticle[]> {
 // Manual refresh function for UI button
 export async function refreshNews(): Promise<NewsArticle[]> {
   try {
-    console.log('Manual refresh triggered - reloading from database...');
+    logger.log('Manual refresh triggered - reloading from database...');
     
     // Clear memory cache to ensure we get fresh data from Appwrite
     memoryCache = null;
@@ -98,7 +99,7 @@ export async function refreshNews(): Promise<NewsArticle[]> {
     // This ensures we display what is in the database rather than fetching new RSS data
     return await fetchCybersecurityNews();
   } catch (error) {
-    console.error('Error refreshing news:', error);
+    logger.error('Error refreshing news:', error);
     
     // Return cached articles if available
     if (memoryCache && memoryCache.articles.length > 0) {

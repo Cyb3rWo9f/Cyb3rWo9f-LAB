@@ -4,6 +4,8 @@
  * Messages are sent directly to your email without backend requirements
  */
 
+import { logger } from './logger';
+
 export interface ContactFormData {
   name: string;
   subject: string;
@@ -71,7 +73,7 @@ export const sendContactMessage = async (
       };
     }
   } catch (error: any) {
-    console.error('Error sending contact message:', error);
+    logger.error('Error sending contact message:', error);
     
     // Handle network errors gracefully
     if (error.name === 'TypeError' && error.message.includes('fetch')) {

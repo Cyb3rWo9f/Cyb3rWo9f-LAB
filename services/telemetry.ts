@@ -1,6 +1,8 @@
 // Real-time VM Telemetry Service using Appwrite Realtime
 // This reads telemetry data pushed by your VM agent
 
+import { logger } from './logger';
+
 const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT;
 const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID;
 const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -71,7 +73,7 @@ export async function fetchTelemetry(): Promise<TelemetryData> {
     });
 
     if (!response.ok) {
-      console.warn('Telemetry fetch failed, VM may be offline');
+      logger.warn('Telemetry fetch failed, VM may be offline');
       return { ...FALLBACK_DATA, status: 'offline' };
     }
 
@@ -91,7 +93,7 @@ export async function fetchTelemetry(): Promise<TelemetryData> {
 
     return mapDocumentToTelemetry(doc);
   } catch (error) {
-    console.error('Failed to fetch telemetry:', error);
+    logger.error('Failed to fetch telemetry:', error);
     return { ...FALLBACK_DATA, status: 'offline' };
   }
 }
@@ -151,11 +153,11 @@ function connectRealtime() {
     const channel = `databases.${APPWRITE_DATABASE_ID}.collections.${TELEMETRY_COLLECTION_ID}.documents`;
     const wsUrl = `${wsEndpoint}/v1/realtime?project=${APPWRITE_PROJECT_ID}&channels[]=${encodeURIComponent(channel)}`;
 
-    console.log('Connecting to Appwrite Realtime for telemetry...');
+    logger.log('Connecting to Appwrite Realtime for telemetry...');
     realtimeSocket = new WebSocket(wsUrl);
 
     realtimeSocket.onopen = () => {
-      console.log('✅ Telemetry realtime connected');
+      logger.log('✅ Telemetry realtime connected');
       reconnectAttempts = 0;
     };
 
@@ -172,32 +174,32 @@ function connectRealtime() {
             try {
               callback(telemetry);
             } catch (err) {
-              console.error('Telemetry callback error:', err);
+              logger.error('Telemetry callback error:', err);
             }
           });
         }
       } catch (err) {
-        console.error('Failed to parse realtime message:', err);
+        logger.error('Failed to parse realtime message:', err);
       }
     };
 
     realtimeSocket.onerror = (error) => {
-      console.error('Telemetry realtime error:', error);
+      logger.error('Telemetry realtime error:', error);
     };
 
     realtimeSocket.onclose = () => {
-      console.log('Telemetry realtime disconnected');
+      logger.log('Telemetry realtime disconnected');
       realtimeSocket = null;
       
       // Attempt reconnection if there are still subscribers
       if (subscribers.size > 0 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts++;
-        console.log(`Reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+        logger.log(`Reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
         setTimeout(connectRealtime, RECONNECT_DELAY);
       }
     };
   } catch (error) {
-    console.error('Failed to connect to realtime:', error);
+    logger.error('Failed to connect to realtime:', error);
   }
 }
 

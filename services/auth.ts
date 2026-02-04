@@ -4,6 +4,7 @@
  */
 
 import { Client, Account, OAuthProvider } from 'appwrite';
+import { logger } from './logger';
 
 // Initialize Appwrite client
 const client = new Client();
@@ -157,12 +158,12 @@ export async function createAnonymousSession(): Promise<User | null> {
     try {
       await account.updatePrefs({ guestId });
     } catch (error) {
-      console.warn('Could not store guest ID in prefs:', error);
+      logger.warn('Could not store guest ID in prefs:', error);
     }
     
     return await getActiveSession();
   } catch (error) {
-    console.error('Anonymous session creation error:', error);
+    logger.error('Anonymous session creation error:', error);
     return null;
   }
 }
@@ -184,7 +185,7 @@ export async function loginWithGoogle(): Promise<void> {
         await account.deleteSession('current');
         clearJwtCache();
       } catch (error) {
-        console.warn('Could not delete anonymous session:', error);
+        logger.warn('Could not delete anonymous session:', error);
       }
     }
     
@@ -200,7 +201,7 @@ export async function loginWithGoogle(): Promise<void> {
       ['profile', 'email']
     );
   } catch (error) {
-    console.error('Google login error:', error);
+    logger.error('Google login error:', error);
     throw error;
   }
 }
@@ -214,24 +215,24 @@ export async function getJwt(): Promise<string | null> {
   try {
     // Always create a fresh JWT for API calls
     // This ensures the latest user labels are included
-    console.log('🔑 Creating fresh JWT...');
+    logger.log('🔑 Creating fresh JWT...');
     const jwt = await account.createJWT();
-    console.log('🔑 JWT created successfully, length:', jwt.jwt.length);
+    logger.log('🔑 JWT created successfully, length:', jwt.jwt.length);
     
     // Decode and log JWT payload for debugging
     try {
       const parts = jwt.jwt.split('.');
       if (parts.length === 3) {
         const payload = JSON.parse(atob(parts[1]));
-        console.log('🔑 JWT payload:', payload);
+        logger.log('🔑 JWT payload:', payload);
       }
     } catch (e) {
-      console.log('🔑 Could not decode JWT payload');
+      logger.log('🔑 Could not decode JWT payload');
     }
     
     return jwt.jwt;
   } catch (error) {
-    console.error('JWT creation error:', error);
+    logger.error('JWT creation error:', error);
     return null;
   }
 }
@@ -271,9 +272,9 @@ export async function getCurrentUser(): Promise<User | null> {
     const user = await account.get();
     const labels = user.labels || [];
     
-    console.log('🔍 getCurrentUser - User ID:', user.$id);
-    console.log('🔍 getCurrentUser - Email:', user.email);
-    console.log('🔍 getCurrentUser - Labels from Appwrite:', labels);
+    logger.log('🔍 getCurrentUser - User ID:', user.$id);
+    logger.log('🔍 getCurrentUser - Email:', user.email);
+    logger.log('🔍 getCurrentUser - Labels from Appwrite:', labels);
     
     // ONLY check for explicit labels manually added in Appwrite dashboard
     // Email verification does NOT grant approval
@@ -283,7 +284,7 @@ export async function getCurrentUser(): Promise<User | null> {
       label.toLowerCase() === 'premium'
     );
     
-    console.log('🔍 getCurrentUser - isApproved:', isApproved);
+    logger.log('🔍 getCurrentUser - isApproved:', isApproved);
     
     // Check if this is an anonymous session (no email means anonymous)
     const isAnonymous = !user.email;
@@ -309,7 +310,7 @@ export async function getCurrentUser(): Promise<User | null> {
     };
   } catch (error) {
     // User is not logged in
-    console.log('🔍 getCurrentUser - Not logged in:', error);
+    logger.log('🔍 getCurrentUser - Not logged in:', error);
     return null;
   }
 }
@@ -328,7 +329,7 @@ export async function logout(): Promise<void> {
     // clearJwtCache() is now a no-op - doesn't clear device JWT
     clearJwtCache();
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error:', error);
     throw error;
   }
 }
@@ -370,7 +371,7 @@ export async function convertAnonymousToEmail(email: string, password: string): 
     await account.updateEmail(email, password);
     return await getCurrentUser();
   } catch (error) {
-    console.error('Account conversion error:', error);
+    logger.error('Account conversion error:', error);
     throw error;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, ExternalLink, Shield, AlertTriangle, Info, Zap, RefreshCw, Radio, FileText, Skull } from 'lucide-react';
 import { fetchCybersecurityNews, refreshNews, formatDate, NewsArticle } from '../services/newsService';
+import { logger } from '../services/logger';
 
 interface NewsViewProps {
   onBack: () => void;
@@ -204,7 +205,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
         addTerminalLine('> Threat feed ready');
         setLoadingPhase('complete');
         
-        console.log(`News loaded: ${validData.length} valid articles ready for display`);
+        logger.log(`News loaded: ${validData.length} valid articles ready for display`);
         
         if (progressInterval) clearInterval(progressInterval);
         
@@ -213,7 +214,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
           setLoading(false);
         }, 1200);
       } catch (error) {
-        console.error('Failed to load news:', error);
+        logger.error('Failed to load news:', error);
         if (progressInterval) clearInterval(progressInterval);
         addTerminalLine('> ERROR: Connection failed');
         setLoading(false);
@@ -243,7 +244,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
       const data = await refreshNews();
       setNews(data);
     } catch (error) {
-      console.error('Failed to refresh news:', error);
+      logger.error('Failed to refresh news:', error);
     } finally {
       setRefreshing(false);
     }
@@ -253,13 +254,13 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
     const seen = new Set<string>();
     const unique = news.filter(article => {
       if (seen.has(article.id)) {
-        console.log(`Duplicate article removed: ${article.id}`);
+        logger.log(`Duplicate article removed: ${article.id}`);
         return false;
       }
       seen.add(article.id);
       return true;
     });
-    console.log(`Deduplication: ${news.length} -> ${unique.length} articles`);
+    logger.log(`Deduplication: ${news.length} -> ${unique.length} articles`);
     return unique;
   }, [news]);
 
@@ -268,7 +269,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
     : uniqueNews.filter(article => article.category === filter);
 
   useEffect(() => {
-    console.log(`Filter: ${filter}, Articles: ${uniqueNews.length} -> ${filteredNews.length}`);
+    logger.log(`Filter: ${filter}, Articles: ${uniqueNews.length} -> ${filteredNews.length}`);
     setPage(1);
   }, [filter, pageSize, news]);
 
@@ -277,7 +278,7 @@ const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedNews = filteredNews.slice(startIndex, startIndex + pageSize);
 
-  console.log(`Pagination: ${filteredNews.length} total, page ${currentPage}/${totalPages}, showing ${paginatedNews.length} articles`);
+  logger.log(`Pagination: ${filteredNews.length} total, page ${currentPage}/${totalPages}, showing ${paginatedNews.length} articles`);
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
