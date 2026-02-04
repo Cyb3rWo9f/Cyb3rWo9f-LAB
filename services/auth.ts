@@ -212,27 +212,9 @@ export async function loginWithGoogle(): Promise<void> {
  */
 export async function getJwt(): Promise<string | null> {
   try {
-    // Get current guest ID (device identifier)
-    const guestId = await getOrCreateGuestId();
-    currentDeviceId = guestId;
-    
-    // Check if we have a valid cached token for this device (with 5 min buffer)
-    const now = Date.now();
-    const cachedToken = deviceJwtCache.get(guestId);
-    
-    if (cachedToken && cachedToken.expires > now + 300000) {
-      return cachedToken.token;
-    }
-    
-    // Get new JWT from Appwrite
+    // Always create a fresh JWT for API calls
+    // This ensures the latest user labels are included
     const jwt = await account.createJWT();
-    
-    // Cache it per device (Appwrite JWTs are valid for 15 minutes)
-    deviceJwtCache.set(guestId, {
-      token: jwt.jwt,
-      expires: now + 15 * 60 * 1000 // 15 minutes
-    });
-    
     return jwt.jwt;
   } catch (error) {
     console.error('JWT creation error:', error);
