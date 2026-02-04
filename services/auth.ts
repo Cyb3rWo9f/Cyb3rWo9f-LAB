@@ -214,7 +214,21 @@ export async function getJwt(): Promise<string | null> {
   try {
     // Always create a fresh JWT for API calls
     // This ensures the latest user labels are included
+    console.log('🔑 Creating fresh JWT...');
     const jwt = await account.createJWT();
+    console.log('🔑 JWT created successfully, length:', jwt.jwt.length);
+    
+    // Decode and log JWT payload for debugging
+    try {
+      const parts = jwt.jwt.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        console.log('🔑 JWT payload:', payload);
+      }
+    } catch (e) {
+      console.log('🔑 Could not decode JWT payload');
+    }
+    
     return jwt.jwt;
   } catch (error) {
     console.error('JWT creation error:', error);
@@ -257,6 +271,10 @@ export async function getCurrentUser(): Promise<User | null> {
     const user = await account.get();
     const labels = user.labels || [];
     
+    console.log('🔍 getCurrentUser - User ID:', user.$id);
+    console.log('🔍 getCurrentUser - Email:', user.email);
+    console.log('🔍 getCurrentUser - Labels from Appwrite:', labels);
+    
     // ONLY check for explicit labels manually added in Appwrite dashboard
     // Email verification does NOT grant approval
     // Only accounts with 'approved' or 'premium' labels have full access
@@ -264,6 +282,8 @@ export async function getCurrentUser(): Promise<User | null> {
       label.toLowerCase() === 'approved' || 
       label.toLowerCase() === 'premium'
     );
+    
+    console.log('🔍 getCurrentUser - isApproved:', isApproved);
     
     // Check if this is an anonymous session (no email means anonymous)
     const isAnonymous = !user.email;
@@ -289,6 +309,7 @@ export async function getCurrentUser(): Promise<User | null> {
     };
   } catch (error) {
     // User is not logged in
+    console.log('🔍 getCurrentUser - Not logged in:', error);
     return null;
   }
 }
